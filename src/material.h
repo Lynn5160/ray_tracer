@@ -6,9 +6,6 @@ struct hit_record;
 #include "ray.h"
 #include "hitable.h"
 
-void logRays(const ray& r);
-void logRays(const vec3& o, const vec3& d);
-
 float schlick(float cosine, float ref_idx)
 {
     float r0 = (1-ref_idx) / (1+ref_idx);
