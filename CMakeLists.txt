@@ -12,12 +12,6 @@ include_directories(${CMAKE_SOURCE_DIR}/src)
 # Build
 add_executable( pRat
   ${CMAKE_SOURCE_DIR}/src/main.cpp
-  ${CMAKE_SOURCE_DIR}/src/vec3.h
-  ${CMAKE_SOURCE_DIR}/src/ray.h
-  ${CMAKE_SOURCE_DIR}/src/hitable.h
-  ${CMAKE_SOURCE_DIR}/src/hitable_list.h
-  ${CMAKE_SOURCE_DIR}/src/sphere.h
-  ${CMAKE_SOURCE_DIR}/src/camera.h
   )
 
 set_target_properties( pRat
