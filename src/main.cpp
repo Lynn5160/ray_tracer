@@ -8,24 +8,19 @@
 #include "camera.h"
 #include "material.h"
 
-vec3 color(const ray& r, hitable *world, int& depth)
-{
+vec3 color(const ray& r, hitable *world, int depth) {
     hit_record rec;
-    if (world->hit(r, 0.001, MAXFLOAT, rec))
-    {
+    if (world->hit(r, 0.001, MAXFLOAT, rec)) {
         ray scattered;
         vec3 attenuation;
-        rec.d = depth;
-        if (depth <= 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered))
-        {
-            depth ++;
-            return attenuation*color(scattered, world, depth);
+        if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered)) {
+            return attenuation*color(scattered, world, depth+1);
         }
-        else
+        else {
             return vec3(0,0,0);
+        }
     }
-    else
-    {
+    else {
         vec3 unit_direction = unit_vector(r.direction());
         float t = 0.5*(unit_direction.y() + 1.0);
         return (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
@@ -34,9 +29,9 @@ vec3 color(const ray& r, hitable *world, int& depth)
 
 int main()
 {
-	int nx = 100;
-	int ny = 50;
-    int ns = 1;
+	int nx = 200;
+	int ny = 100;
+    int ns = 50;
 	std::ofstream image;
 	image.open ("image.ppm");
 	image << "P3\n" << nx << " " << ny << "\n255\n";
@@ -58,7 +53,7 @@ int main()
 		for (int i=0; i<nx; i++)
 		{
             vec3 col(0, 0, 0);
-            int depth = 1;
+            int depth = 0;
 
             for (int s=0; s<ns; s++)
             {
