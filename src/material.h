@@ -71,10 +71,12 @@ public:
     float fuzz;
 };
 
-class dielectric : public material {
+class dielectric : public material
+{
 public:
     dielectric(float ri) : ref_idx(ri) {}
-    virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const  {
+    virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const
+    {
         vec3 outward_normal;
         vec3 reflected = reflect(r_in.direction(), rec.normal);
         float ni_over_nt;
@@ -82,14 +84,17 @@ public:
         vec3 refracted;
         float reflect_prob;
         float cosine;
-        if (dot(r_in.direction(), rec.normal) > 0) {
+        
+        if (dot(r_in.direction(), rec.normal) > 0)
+        {
             outward_normal = -rec.normal;
             ni_over_nt = ref_idx;
-            //         cosine = ref_idx * dot(r_in.direction(), rec.normal) / r_in.direction().length();
-            cosine = dot(r_in.direction(), rec.normal) / r_in.direction().length();
+            cosine = ref_idx * dot(r_in.direction(), rec.normal) / r_in.direction().length();
+//            cosine = dot(r_in.direction(), rec.normal) / r_in.direction().length();
             cosine = sqrt(1 - ref_idx*ref_idx*(1-cosine*cosine));
         }
-        else {
+        else
+        {
             outward_normal = rec.normal;
             ni_over_nt = 1.0 / ref_idx;
             cosine = -dot(r_in.direction(), rec.normal) / r_in.direction().length();

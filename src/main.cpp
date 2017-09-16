@@ -8,9 +8,11 @@
 #include "camera.h"
 #include "material.h"
 
-vec3 color(const ray& r, hitable *world, int depth) {
+vec3 color(const ray& r, hitable *world, int depth)
+{
     hit_record rec;
-    if (world->hit(r, 0.001, MAXFLOAT, rec)) {
+    if (world->hit(r, 0.001, FLT_MAX, rec))
+    {
         ray scattered;
         vec3 attenuation;
         if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered)) {
@@ -29,15 +31,15 @@ vec3 color(const ray& r, hitable *world, int depth) {
 
 int main()
 {
-	int nx = 200;
-	int ny = 100;
+	int nx = 500;
+	int ny = 250;
     int ns = 50;
 	std::ofstream image;
 	image.open ("image.ppm");
 	image << "P3\n" << nx << " " << ny << "\n255\n";
 
     hitable *list[5];
-    
+
     // Ground
     list[0] = new sphere(vec3(0,-100.5,-1), 100, new lambertian(vec3(0.8, 0.8, 0.0)));
 
@@ -46,7 +48,12 @@ int main()
     list[3] = new sphere(vec3(-1,0,-1), 0.5, new dielectric(1.5));
     
     hitable *world = new hitable_list(list, 4);
-    camera cam;
+    vec3 lookfrom(3, 3, 2);
+    vec3 lookat(0, 0, -1);
+    float distance_to_focus = (lookfrom - lookat).length();
+    float aperture = 2.0;
+    
+    camera cam(lookfrom, lookat, vec3(0,1,0), 20, (float)(nx / ny), aperture, distance_to_focus);
     
 	for (int j=ny-1; j>=0; j--)
 	{
