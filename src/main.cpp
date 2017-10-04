@@ -31,8 +31,8 @@ vec3 color(const ray& r, hitable *world, int depth)
 
 int main()
 {
-	int nx = 500;
-	int ny = 250;
+	int nx = 200;
+    int ny = 100;
     int ns = 50;
 	std::ofstream image;
 	image.open ("image.ppm");

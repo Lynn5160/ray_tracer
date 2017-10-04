@@ -39,8 +39,9 @@ vec3 random_in_unit_sphere() {
     return p;
 }
 
-
-class material  {
+// Material Base Class
+class material
+{
 public:
     virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const = 0;
 };
