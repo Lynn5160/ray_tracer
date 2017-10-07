@@ -35,16 +35,16 @@ class camera
             v = cross(w, u);
 
             lower_left_corner = origin - half_width * focus_dist * u - half_height * focus_dist * v - focus_dist * w;
-            horizontal  = 2 * half_width * focus_dist * u;
-            vertical  = 2 * half_height * focus_dist * v;
-            logVec(lower_left_corner);
+            horizontal = 2 * half_width * focus_dist * u;
+            vertical = 2 * half_height * focus_dist * v;
         }
     
         ray get_ray(float s, float t)
         {
             vec3 rd = lens_radius * random_in_unit_disc();
             vec3 offset = u * rd.x() + v * rd.y();
-            return ray(origin + offset, lower_left_corner + s*horizontal + t*vertical - origin - offset);
+            ray cam_ray = ray(origin + offset, lower_left_corner + s*horizontal + t*vertical - origin - offset);
+            return cam_ray;
         }
 
         vec3 origin;
