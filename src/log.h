@@ -6,7 +6,7 @@
 void logRay(const ray& r)
 {
     using namespace std;
-    cout << r.origin().x() << "," << r.origin().y() << "," << r.origin().z() << "," <<;
+    cout << r.origin().x() << "," << r.origin().y() << "," << r.origin().z() << ",";
     cout << r.direction().x() << "," << r.direction().y() << "," << r.direction().z() << ",";
 }
 
