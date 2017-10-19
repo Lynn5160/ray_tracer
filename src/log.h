@@ -3,30 +3,29 @@
 
 #include "ray.h"
 
+using namespace std;
+
 void logRay(const ray& r)
 {
-    using namespace std;
+    vec3 ray_tip = r.origin() + r.direction();
     cout << r.origin().x() << "," << r.origin().y() << "," << r.origin().z() << ",";
-    cout << r.direction().x() << "," << r.direction().y() << "," << r.direction().z() << ",";
+    cout << ray_tip.x() << "," << ray_tip.y() << "," << ray_tip.z() << ",";
 }
 
 void logRay(const vec3& o, const vec3& d)
 {
-    using namespace std;
     cout << o.x() << "," << o.y() << "," << o.z() << ",";
-    cout << d.x() << "," << d.y() << "," << d.z() << ",";
+    cout << (o + d).x() << "," << (o + d).y() << "," << (o + d).z() << ",";
 }
 
 void logVec(const vec3& v)
 {
-    using namespace std;
     cout << v.x() << "," << v.y() << "," << v.z() << ",";
 }
 
 template<typename T>
 void logVar(const T& var)
 {
-    using namespace std;
     std::cout << var;
 }
 
