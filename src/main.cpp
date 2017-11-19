@@ -84,8 +84,7 @@ int main()
     // Ground
     list[0] = new sphere(vec3(0,-100.5,-1), 100, new lambertian(vec3(0.8, 0.8, 0.0)));
 
-//    list[1] = new sphere(vec3(0,0,-1), 0.5, new lambertian(vec3(0.1, 0.2, 0.5)));
-    list[1] = new moving_sphere(vec3(0,0,-1), vec3(0,0,-1) + vec3(0, 0.5 * drand48(), 0), 0.0, 1.0, 0.5, new lambertian(vec3(0.1, 0.2, 0.5)));
+    list[1] = new moving_sphere(vec3(0,0,-1), vec3(0,0,-1) + vec3(0, 0.5, 0), 0.0, 1.0, 0.5, new lambertian(vec3(0.1, 0.2, 0.5)));
     list[2] = new sphere(vec3(1,0,-1), 0.5, new metal(vec3(0.8, 0.6, 0.2), 0.0));
     list[3] = new sphere(vec3(-1,0,-1), 0.5, new dielectric(1.5));
     
@@ -98,14 +97,14 @@ int main()
     
     camera cam(lookfrom, lookat, vec3(0, 1, 0), 20, (float)(nx / ny), aperture, distance_to_focus, 0.0, 1.0);
     
-	for (int j=ny-1; j>=0; j--)
+	for (int j = ny - 1; j >= 0; j--)
 	{
 		for (int i=0; i<nx; i++)
 		{
             vec3 col(0, 0, 0);
             int depth = 0;
 
-            for (int s=0; s<ns; s++)
+            for (int s=0; s < ns; s++)
             {
                 float u = float(i + drand48()) / float(nx);
                 float v = float(j + drand48()) / float(ny);
