@@ -22,9 +22,14 @@ class camera
                vec3 vup, float vfov,
                          float aspect,
                          float aperture,
-                         float focus_dist)
+                         float focus_dist,
+                         float t0,
+                         float t1)
         {
+            time0 = t0;
+            time1 = t1;
             lens_radius = aperture / 2;
+            
             float theta = vfov * M_PI / 180;
             float half_height = tan(theta / 2);
             float half_width = aspect * half_height;
@@ -43,7 +48,8 @@ class camera
         {
             vec3 rd = lens_radius * random_in_unit_disc();
             vec3 offset = u * rd.x() + v * rd.y();
-            ray cam_ray = ray(origin + offset, lower_left_corner + s*horizontal + t*vertical - origin - offset);
+            float time = time0 + drand48()*(time1 - time0);
+            ray cam_ray = ray(origin + offset, lower_left_corner + s*horizontal + t*vertical - origin - offset, time);
             return cam_ray;
         }
 
@@ -53,6 +59,7 @@ class camera
         vec3 vertical;
         vec3 u, v, w;
         float lens_radius;
+        float time0, time1;
 };
 #endif
 
