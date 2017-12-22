@@ -74,7 +74,7 @@ int main()
 {
 	int nx = 500;
     int ny = 250;
-    int ns = 10;
+    int ns = 100;
 	std::ofstream image;
 	image.open ("image.ppm");
 	image << "P3\n" << nx << " " << ny << "\n255\n";
@@ -84,7 +84,7 @@ int main()
     // Ground
     list[0] = new sphere(vec3(0,-100.5,-1), 100, new lambertian(vec3(0.8, 0.8, 0.0)));
 
-    list[1] = new moving_sphere(vec3(0,0,-1), vec3(0,0,-1) + vec3(0, 0.5, 0), 0.0, 1.0, 0.5, new lambertian(vec3(0.1, 0.2, 0.5)));
+    list[1] = new moving_sphere(vec3(0,0,-1), vec3(0,0,-1) + vec3(0, 0.5, 1), 0.0, 1.0, 0.5, new lambertian(vec3(0.1, 0.2, 0.5)));
     list[2] = new sphere(vec3(1,0,-1), 0.5, new metal(vec3(0.8, 0.6, 0.2), 0.0));
     list[3] = new sphere(vec3(-1,0,-1), 0.5, new dielectric(1.5));
     
@@ -97,7 +97,10 @@ int main()
     
     camera cam(lookfrom, lookat, vec3(0, 1, 0), 20, (float)(nx / ny), aperture, distance_to_focus, 0.0, 1.0);
     
-	for (int j = ny - 1; j >= 0; j--)
+    int progress = 1;
+    int percentage = 0;
+    
+    for (int j = ny-1; j >= 0; j--)
 	{
 		for (int i=0; i<nx; i++)
 		{
@@ -119,6 +122,15 @@ int main()
 			int ig = int(255.99*col[1]);
 			int ib = int(255.99*col[2]);
 			image << ir << " " << ig << " " << ib << "\n";
+            
+            // Progress bar
+            int perc = (progress * 100) / (nx*ny) + 1;
+            if (perc > percentage)
+            {
+                logProgress(percentage);
+                percentage = perc;
+            }
+            progress ++;
 		}
 	}
 	image.close();

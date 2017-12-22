@@ -26,7 +26,13 @@ void logVec(const vec3& v)
 template<typename T>
 void logVar(const T& var)
 {
-    std::cout << var;
+    std::cout << var << std::endl;
+}
+
+template<typename T>
+void logProgress(const T& var)
+{
+    std::cout << "Progress: " << var << "%" << std::endl;
 }
 
 #endif
