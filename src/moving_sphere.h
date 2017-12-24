@@ -2,6 +2,7 @@
 #define MOVING_SPHEREH
 
 #include "hitable.h"
+#include "aabb.h"
 
 class moving_sphere: public hitable
 {
@@ -14,6 +15,7 @@ class moving_sphere: public hitable
                                                                                     radius(r),
                                                                                     mat_ptr(m) {};
     virtual bool hit(const ray& r, float tmin, float tmax, hit_record& rec) const;
+    virtual bool bounding_box(float t0, float t1, aabb& box) const;
 
     vec3 center(float time) const;
     vec3 center0, center1;
@@ -57,6 +59,13 @@ bool moving_sphere::hit(const ray& r, float t_min, float t_max, hit_record& rec)
         }
     }
     return false;
+}
+
+bool moving_sphere::bounding_box(float t0, float t1, aabb& box) const {
+    aabb box0(center(t0) - vec3(radius, radius, radius), center(t0) + vec3(radius, radius, radius));
+    aabb box1(center(t1) - vec3(radius, radius, radius), center(t1) + vec3(radius, radius, radius));
+    box = surrounding_box(box0, box1);
+    return true;
 }
 #endif
 
