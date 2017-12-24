@@ -38,7 +38,8 @@ hitable *random_scene()
 {
     int n = 500;
     hitable **list = new hitable*[n+1];
-    list[0] =  new sphere(vec3(0,-1000,0), 1000, new lambertian(new constant_texture(vec3(0.5, 0.5, 0.5))));
+    texture* checker = new checker_texture(new constant_texture(vec3(0.2, 0.3, 0.1)), new constant_texture(vec3(0.9, 0.9, 0.9)));
+    list[0] =  new sphere(vec3(0,-1000,0), 1000, new lambertian(checker));
     int i = 1;
     for (int a = -11; a < 11; a++)
     {
@@ -81,7 +82,7 @@ int main()
 {
 	int nx = 500;
     int ny = 250;
-    int ns = 10;
+    int ns = 50;
 	std::ofstream image;
 	image.open ("image.ppm");
 	image << "P3\n" << nx << " " << ny << "\n255\n";
@@ -89,7 +90,9 @@ int main()
     hitable *list[4];
 
     // Ground
-    list[0] = new sphere(vec3(0,-100.5,-1), 100, new lambertian(new constant_texture(vec3(0.8, 0.8, 0.0))));
+    texture* checker = new checker_texture(new constant_texture(vec3(0.2, 0.3, 0.1)), new constant_texture(vec3(0.9, 0.9, 0.9)));
+    
+    list[0] = new sphere(vec3(0,-100.5,-1), 100, new lambertian(checker));
 
     list[1] = new moving_sphere(vec3(0,0,-1), vec3(0,0,-1) + vec3(0, 0.5, 1), 0.0, 1.0, 0.5, new lambertian(new constant_texture(vec3(0.1, 0.2, 0.5))));
     list[2] = new sphere(vec3(1,0,-1), 0.5, new metal(vec3(0.8, 0.6, 0.2), 0.0));
@@ -108,7 +111,7 @@ int main()
 
     
     float dist_to_focus = 10.0;
-    float aperture = 0.0;
+    float aperture = 0.1;
     
     camera cam(lookfrom, lookat, vec3(0,1,0), vfov, float(nx)/float(ny), aperture, dist_to_focus, 0.0, 1.0);
 
