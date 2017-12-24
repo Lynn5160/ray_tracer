@@ -51,7 +51,9 @@ hitable *random_scene()
                 if (choose_mat < 0.8)
                 {
                     // diffuse
-                    list[i++] = new moving_sphere(center, center + vec3(0, 0.5 * drand48(), 0), 0.0, 1.0, 0.2, new lambertian(vec3(drand48()*drand48(), drand48()*drand48(), drand48()*drand48())));
+                    list[i++] = new moving_sphere(center, center + vec3(0, 0.5 * drand48(), 0), 0.0, 1.0, 0.2, new lambertian(vec3(drand48()*drand48(),
+                                                                                                                                   drand48()*drand48(),
+                                                                                                                                   drand48()*drand48())));
                 }
                 else if (choose_mat < 0.95)
                 {
@@ -79,7 +81,7 @@ int main()
 {
 	int nx = 500;
     int ny = 250;
-    int ns = 50;
+    int ns = 10;
 	std::ofstream image;
 	image.open ("image.ppm");
 	image << "P3\n" << nx << " " << ny << "\n255\n";
@@ -102,7 +104,7 @@ int main()
     hitable *world = random_scene();
     vec3 lookfrom(13,2,3);
     vec3 lookat(0,0,0);
-    float vfov = 40.0;
+    float vfov = 20.0;
 
     
     float dist_to_focus = 10.0;
