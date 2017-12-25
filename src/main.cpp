@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <thread>
 
 #include "log.h"
 #include "sphere.h"
@@ -9,6 +10,9 @@
 #include "camera.h"
 #include "material.h"
 #include "bvh.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 vec3 color(const ray& r, hitable *world, int depth)
 {
@@ -38,9 +42,9 @@ hitable *random_scene()
 {
     int n = 500;
     hitable **list = new hitable*[n+1];
-//    texture* checker = new checker_texture(new constant_texture(vec3(0.2, 0.3, 0.1)), new constant_texture(vec3(0.9, 0.9, 0.9)));
-    texture* noise = new noise_texture(1);
-    list[0] =  new sphere(vec3(0,-1000,0), 1000, new lambertian(noise));
+    texture* texture = new checker_texture(new constant_texture(vec3(0.2, 0.3, 0.1)), new constant_texture(vec3(0.9, 0.9, 0.9)));
+//    texture* texture = new noise_texture(1);
+    list[0] =  new sphere(vec3(0,-1000,0), 1000, new lambertian(texture));
     int i = 1;
     for (int a = -11; a < 11; a++)
     {
@@ -54,8 +58,8 @@ hitable *random_scene()
                 {
                     // diffuse
                     list[i++] = new moving_sphere(center, center + vec3(0, 0.5 * drand48(), 0), 0.0, 1.0, 0.2, new lambertian(new constant_texture(vec3(drand48()*drand48(),
-                                                                                                                                   drand48()*drand48(),
-                                                                                                                                   drand48()*drand48()))));
+                                                                                                                                                        drand48()*drand48(),
+                                                                                                                                                        drand48()*drand48()))));
                 }
                 else if (choose_mat < 0.95)
                 {
@@ -72,7 +76,9 @@ hitable *random_scene()
     }
     
     list[i++] = new sphere(vec3(0, 1, 0), 1.0, new dielectric(1.5));
-    list[i++] = new sphere(vec3(-4, 1, 0), 1.0, new lambertian(new constant_texture(vec3(0.4, 0.2, 0.1))));
+    int nx, ny, nn;
+    unsigned char *tex_data = stbi_load("/Volumes/Work-HD/Development/pRat_project/pRat/img/earthmap.jpg", &nx, &ny, &nn, 0);
+    list[i++] = new sphere(vec3(-4, 1, 0), 1.0, new lambertian(new image_texture(tex_data, nx, ny)));
     list[i++] = new sphere(vec3(4, 1, 0), 1.0, new metal(vec3(0.7, 0.6, 0.5), 0.0));
     
     return new bvh_node(list,i, 0.0, 1.0);
@@ -87,7 +93,7 @@ int main()
 	image.open ("image.ppm");
 	image << "P3\n" << nx << " " << ny << "\n255\n";
 
-//    // hitable *list[4];
+//    hitable *list[4];
 //    texture* checker = new checker_texture(new constant_texture(vec3(0.2, 0.3, 0.1)), new constant_texture(vec3(0.9, 0.9, 0.9)));
 //    list[0] = new sphere(vec3(0,-100.5,-1), 100, new lambertian(checker));
 //    list[1] = new moving_sphere(vec3(0,0,-1), vec3(0,0,-1) + vec3(0, 0.25, 0.25), 0.0, 1.0, 0.5, new lambertian(new constant_texture(vec3(0.1, 0.2, 0.5))));
