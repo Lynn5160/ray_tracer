@@ -10,6 +10,7 @@
 #include "camera.h"
 #include "material.h"
 #include "bvh.h"
+#include "aarect.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -21,20 +22,24 @@ vec3 color(const ray& r, hitable *world, int depth)
     {
         ray scattered;
         vec3 attenuation;
+        vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
         if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered))
         {
-            return attenuation*color(scattered, world, depth+1);
+            return emitted + attenuation*color(scattered, world, depth+1);
         }
         else
         {
-            return vec3(0,0,0);
+//            return vec3(0,0,0);
+            return emitted;
         }
     }
     else
     {
-        vec3 unit_direction = unit_vector(r.direction());
-        float t = 0.5*(unit_direction.y() + 1.0);
-        return (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
+//        vec3 unit_direction = unit_vector(r.direction());
+//        float t = 0.5*(unit_direction.y() + 1.0);
+//        return (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
+        return vec3(0,0,0);
+
     }
 }
 
@@ -84,33 +89,55 @@ hitable *random_scene()
     return new bvh_node(list,i, 0.0, 1.0);
 }
 
+hitable* simple_scene()
+{
+        hitable *list[4];
+        texture* checker = new checker_texture(new constant_texture(vec3(0.2, 0.3, 0.1)), new constant_texture(vec3(0.9, 0.9, 0.9)));
+        list[0] = new sphere(vec3(0,-100.5,-1), 100, new lambertian(checker));
+        list[1] = new moving_sphere(vec3(0,0,-1), vec3(0,0,-1) + vec3(0, 0.25, 0.25), 0.0, 1.0, 0.5, new lambertian(new constant_texture(vec3(0.1, 0.2, 0.5))));
+        list[2] = new sphere(vec3(1,0,-1), 0.5, new metal(vec3(0.8, 0.6, 0.2), 0.0));
+        list[3] = new sphere(vec3(-1,0,-1), 0.5, new dielectric(1.5));
+    
+    return  new bvh_node(list, 4, 0.0, 1.0);
+}
+
+hitable* simple_light()
+{
+    texture *pertext = new noise_texture(4);
+    hitable **list = new hitable*[4];
+    list[0] =  new sphere(vec3(0,-1000, 0), 1000, new lambertian( pertext ));
+    list[1] =  new sphere(vec3(0, 2, 0), 2, new lambertian( pertext ));
+    list[2] =  new sphere(vec3(0, 7, 0), 2, new diffuse_light( new constant_texture(vec3(4,4,4))));
+    list[3] =  new xy_rect(3, 5, 1, 3, -2, new diffuse_light(new constant_texture(vec3(4,4,4))));
+    return new hitable_list(list,4);
+}
+
 int main()
 {
 	int nx = 500;
     int ny = 250;
-    int ns = 10;
+    int ns = 25;
 	std::ofstream image;
 	image.open ("image.ppm");
 	image << "P3\n" << nx << " " << ny << "\n255\n";
 
-//    hitable *list[4];
-//    texture* checker = new checker_texture(new constant_texture(vec3(0.2, 0.3, 0.1)), new constant_texture(vec3(0.9, 0.9, 0.9)));
-//    list[0] = new sphere(vec3(0,-100.5,-1), 100, new lambertian(checker));
-//    list[1] = new moving_sphere(vec3(0,0,-1), vec3(0,0,-1) + vec3(0, 0.25, 0.25), 0.0, 1.0, 0.5, new lambertian(new constant_texture(vec3(0.1, 0.2, 0.5))));
-//    list[2] = new sphere(vec3(1,0,-1), 0.5, new metal(vec3(0.8, 0.6, 0.2), 0.0));
-//    list[3] = new sphere(vec3(-1,0,-1), 0.5, new dielectric(1.5));
-//
-//    hitable *world = new bvh_node(list, 4, 0.0, 1.0);
+
+//    Simple Scene
+//    hitable *world = simple_scene();
+    hitable *world = simple_light();
 //    vec3 lookfrom(3, 3, 2);
-//    vec3 lookat(0, 0, -1);
-    
-    // Random Scene
-    hitable *world = random_scene();
     vec3 lookfrom(13,2,3);
-    vec3 lookat(0,0,0);
+    vec3 lookat(0, 0, -1);
+    
+    
+    
+//    Random Scene
+//    hitable *world = random_scene();
+//    vec3 lookfrom(13,2,3);
+//    vec3 lookat(0,0,0);
 
     float dist_to_focus = 10.0;
-    float aperture = 0.1;
+    float aperture = 0.01;
     float vfov = 20.0;
     
     camera cam(lookfrom, lookat, vec3(0,1,0), vfov, float(nx)/float(ny), aperture, dist_to_focus, 0.0, 1.0);
