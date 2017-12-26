@@ -1,6 +1,8 @@
 #include <iostream>
 #include <fstream>
 #include <thread>
+#include <mutex>
+#include <vector>
 
 #include "log.h"
 #include "sphere.h"
@@ -18,7 +20,7 @@
 vec3 color(const ray& r, hitable *world, int depth)
 {
     hit_record rec;
-    if (world->hit(r, 0.001, FLT_MAX, rec))
+    if (world->hit(r, 0.001, FLT_MAX, rec)) 
     {
         ray scattered;
         vec3 attenuation;
@@ -29,17 +31,15 @@ vec3 color(const ray& r, hitable *world, int depth)
         }
         else
         {
-//            return vec3(0,0,0);
             return emitted;
         }
     }
     else
     {
-//        vec3 unit_direction = unit_vector(r.direction());
-//        float t = 0.5*(unit_direction.y() + 1.0);
-//        return (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
-        return vec3(0,0,0);
-
+        vec3 unit_direction = unit_vector(r.direction());
+        float t = 0.5*(unit_direction.y() + 1.0);
+        return (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
+//        return vec3(0,0,0);
     }
 }
 
@@ -112,43 +112,17 @@ hitable* simple_light()
     return new hitable_list(list,4);
 }
 
-int main()
+std::mutex locker;
+
+void worker(int id, int nx, int ny, int ns, hitable* world, camera* cam, vec3* data)
 {
-	int nx = 500;
-    int ny = 250;
-    int ns = 25;
-	std::ofstream image;
-	image.open ("image.ppm");
-	image << "P3\n" << nx << " " << ny << "\n255\n";
-
-
-//    Simple Scene
-//    hitable *world = simple_scene();
-    hitable *world = simple_light();
-//    vec3 lookfrom(3, 3, 2);
-    vec3 lookfrom(13,2,3);
-    vec3 lookat(0, 0, -1);
+    int ny1 = ny / 8 * id;
+    int ny2 = ny1 - (ny / 8);
     
-    
-    
-//    Random Scene
-//    hitable *world = random_scene();
-//    vec3 lookfrom(13,2,3);
-//    vec3 lookat(0,0,0);
-
-    float dist_to_focus = 10.0;
-    float aperture = 0.01;
-    float vfov = 20.0;
-    
-    camera cam(lookfrom, lookat, vec3(0,1,0), vfov, float(nx)/float(ny), aperture, dist_to_focus, 0.0, 1.0);
-
-    int progress = 1;
-    int percentage = 0;
-    
-    for (int j = ny-1; j >= 0; j--)
-	{
-		for (int i=0; i<nx; i++)
-		{
+    for (int j = ny1-1; j >= ny2; j--)
+    {
+        for (int i=0; i<nx; i++)
+        {
             vec3 col(0, 0, 0);
 
             for (int s=0; s < ns; s++)
@@ -156,27 +130,75 @@ int main()
                 float u = float(i + drand48()) / float(nx);
                 float v = float(j + drand48()) / float(ny);
 
-                ray r = cam.get_ray(u, v);
+                ray r = cam->get_ray(u, v);
                 col += color(r, world, 0);
             }
-            
+
             col /= float(ns);
             col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
-			int ir = int(255.99*col[0]);
-			int ig = int(255.99*col[1]);
-			int ib = int(255.99*col[2]);
-			image << ir << " " << ig << " " << ib << "\n";
+            int ir = int(255.99*col[0]);
+            int ig = int(255.99*col[1]);
+            int ib = int(255.99*col[2]);
             
-            // Progress bar
-            int perc = (progress * 100) / (nx*ny) + 1;
-            if (perc > percentage)
-            {
-                logProgress(percentage);
-                percentage = perc;
-            }
-            progress ++;
-		}
-	}
+            locker.lock();
+            data[nx*(ny-j)+i] = vec3(ir, ig, ib);
+            locker.unlock();
+        }
+    }
+}
+
+int main()
+{
+	int nx = 512;
+    int ny = 256;
+    int ns = 10;
+	std::ofstream image;
+//    std::vector<vec3> data(nx*ny);
+    vec3* data = new vec3[nx*ny];
+	image.open ("image.ppm");
+	image << "P3\n" << nx << " " << ny << "\n255\n";
+
+
+//    Simple Scene
+//    hitable* world = simple_scene();
+//    hitable *world = simple_light();
+//    vec3 lookfrom(13,2,3);
+//    vec3 lookat(0, 0, -1);
+    
+//    Random Scene
+    hitable *world = random_scene();
+    vec3 lookfrom(13,2,3);
+    vec3 lookat(0,0,0);
+
+    float dist_to_focus = 10.0;
+    float aperture = 0.01;
+    float vfov = 20.0;
+    
+    camera* cam = new camera(lookfrom, lookat, vec3(0,1,0), vfov, float(nx)/float(ny), aperture, dist_to_focus, 0.0, 1.0);
+    
+    std::thread t1(worker, 1, nx, ny, ns, world, cam, data);
+    std::thread t2(worker, 2, nx, ny, ns, world, cam, data);
+    std::thread t3(worker, 3, nx, ny, ns, world, cam, data);
+    std::thread t4(worker, 4, nx, ny, ns, world, cam, data);
+    std::thread t5(worker, 5, nx, ny, ns, world, cam, data);
+    std::thread t6(worker, 6, nx, ny, ns, world, cam, data);
+    std::thread t7(worker, 7, nx, ny, ns, world, cam, data);
+    std::thread t8(worker, 8, nx, ny, ns, world, cam, data);
+
+    t1.join();
+    t2.join();
+    t3.join();
+    t4.join();
+    t5.join();
+    t6.join();
+    t7.join();
+    t8.join();
+    
+    for (int i=0; i<nx*ny; i++)
+        image << data[i] << "\n";
+    
 	image.close();
 	return 0;
 }
+
+
