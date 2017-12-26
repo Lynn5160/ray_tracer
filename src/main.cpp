@@ -17,6 +17,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+std::mutex locker;
+void worker(int tc, int id, int nx, int ny, int ns, hitable* world, camera* cam, vec3* data);
+
 vec3 color(const ray& r, hitable *world, int depth)
 {
     hit_record rec;
@@ -112,51 +115,11 @@ hitable* simple_light()
     return new hitable_list(list,4);
 }
 
-std::mutex locker;
-
-void worker(int id, int nx, int ny, int ns, hitable* world, camera* cam, vec3* data)
-{
-    int ny1 = ny / 8 * id;
-    int ny2 = ny1 - (ny / 8);
-    
-    for (int j = ny1-1; j >= ny2; j--)
-    {
-        for (int i=0; i<nx; i++)
-        {
-            vec3 col(0, 0, 0);
-
-            for (int s=0; s < ns; s++)
-            {
-                float u = float(i + drand48()) / float(nx);
-                float v = float(j + drand48()) / float(ny);
-
-                ray r = cam->get_ray(u, v);
-                col += color(r, world, 0);
-            }
-
-            col /= float(ns);
-            col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
-            int ir = int(255.99*col[0]);
-            int ig = int(255.99*col[1]);
-            int ib = int(255.99*col[2]);
-            
-            locker.lock();
-            data[nx*(ny-j-1)+i] = vec3(ir, ig, ib);
-            locker.unlock();
-        }
-    }
-}
-
 int main()
 {
-	int nx = 512;
+	int nx = 556;
     int ny = 256;
-    int ns = 50;
-	std::ofstream image;
-//    std::vector<vec3> data(nx*ny);
-    vec3* data = new vec3[nx*ny];
-
-
+    int ns = 10;
 
 //    Simple Scene
 //    hitable* world = simple_scene();
@@ -175,31 +138,54 @@ int main()
     
     camera* cam = new camera(lookfrom, lookat, vec3(0,1,0), vfov, float(nx)/float(ny), aperture, dist_to_focus, 0.0, 1.0);
     
-    std::thread t1(worker, 1, nx, ny, ns, world, cam, data);
-    std::thread t2(worker, 2, nx, ny, ns, world, cam, data);
-    std::thread t3(worker, 3, nx, ny, ns, world, cam, data);
-    std::thread t4(worker, 4, nx, ny, ns, world, cam, data);
-    std::thread t5(worker, 5, nx, ny, ns, world, cam, data);
-    std::thread t6(worker, 6, nx, ny, ns, world, cam, data);
-    std::thread t7(worker, 7, nx, ny, ns, world, cam, data);
-    std::thread t8(worker, 8, nx, ny, ns, world, cam, data);
-
-    t1.join();
-    t2.join();
-    t3.join();
-    t4.join();
-    t5.join();
-    t6.join();
-    t7.join();
-    t8.join();
+    // Spawning threads
+    vec3* data = new vec3[nx*ny];
+    int tc = std::thread::hardware_concurrency();
+    std::thread* threads = new std::thread[tc];
+    for (int i=1; i<tc+1; i++) threads[i] = std::thread(worker, tc, i, nx, ny, ns, world, cam, data);
+    for (int i=1; i<tc+1; i++) threads[i].join();
     
     // Image writing
+    std::ofstream image;
     image.open ("image.ppm");
     image << "P3\n" << nx << " " << ny << "\n255\n";
     for (int i=0; i<nx*ny; i++)
         image << data[i] << "\n";
 	image.close();
 	return 0;
+}
+
+void worker(int tc, int id, int nx, int ny, int ns, hitable* world, camera* cam, vec3* data)
+{
+    int ny1 = ny / tc * id;
+    int ny2 = ny1 - (ny / tc);
+    
+    for (int j = ny1-1; j >= ny2; j--)
+    {
+        for (int i=0; i<nx; i++)
+        {
+            vec3 col(0, 0, 0);
+            
+            for (int s=0; s < ns; s++)
+            {
+                float u = float(i + drand48()) / float(nx);
+                float v = float(j + drand48()) / float(ny);
+                
+                ray r = cam->get_ray(u, v);
+                col += color(r, world, 0);
+            }
+            
+            col /= float(ns);
+            col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
+            int ir = int(255.99*col[0]);
+            int ig = int(255.99*col[1]);
+            int ib = int(255.99*col[2]);
+            
+            locker.lock();
+            data[nx*(ny-j-1)+i] = vec3(ir, ig, ib);
+            locker.unlock();
+        }
+    }
 }
 
 
