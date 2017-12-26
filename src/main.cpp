@@ -117,10 +117,6 @@ hitable* simple_light()
 
 int main()
 {
-	int nx = 556;
-    int ny = 256;
-    int ns = 10;
-
 //    Simple Scene
 //    hitable* world = simple_scene();
 //    hitable *world = simple_light();
@@ -132,8 +128,11 @@ int main()
     vec3 lookfrom(13,2,3);
     vec3 lookat(0,0,0);
 
+    int nx = 512;
+    int ny = 256;
+    int ns = 100;
     float dist_to_focus = 10.0;
-    float aperture = 0.01;
+    float aperture = 0.1;
     float vfov = 20.0;
     
     camera* cam = new camera(lookfrom, lookat, vec3(0,1,0), vfov, float(nx)/float(ny), aperture, dist_to_focus, 0.0, 1.0);
@@ -142,8 +141,8 @@ int main()
     vec3* data = new vec3[nx*ny];
     int tc = std::thread::hardware_concurrency();
     std::thread* threads = new std::thread[tc];
-    for (int i=1; i<tc+1; i++) threads[i] = std::thread(worker, tc, i, nx, ny, ns, world, cam, data);
-    for (int i=1; i<tc+1; i++) threads[i].join();
+    for (int i=1; i<=tc; i++) threads[i-1] = std::thread(worker, tc, i, nx, ny, ns, world, cam, data);
+    for (int i=1; i<=tc; i++) threads[i-1].join();
     
     // Image writing
     std::ofstream image;
