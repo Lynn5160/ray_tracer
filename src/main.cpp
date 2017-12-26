@@ -141,7 +141,7 @@ void worker(int id, int nx, int ny, int ns, hitable* world, camera* cam, vec3* d
             int ib = int(255.99*col[2]);
             
             locker.lock();
-            data[nx*(ny-j)+i] = vec3(ir, ig, ib);
+            data[nx*(ny-j-1)+i] = vec3(ir, ig, ib);
             locker.unlock();
         }
     }
@@ -151,12 +151,11 @@ int main()
 {
 	int nx = 512;
     int ny = 256;
-    int ns = 10;
+    int ns = 50;
 	std::ofstream image;
 //    std::vector<vec3> data(nx*ny);
     vec3* data = new vec3[nx*ny];
-	image.open ("image.ppm");
-	image << "P3\n" << nx << " " << ny << "\n255\n";
+
 
 
 //    Simple Scene
@@ -194,9 +193,11 @@ int main()
     t7.join();
     t8.join();
     
+    // Image writing
+    image.open ("image.ppm");
+    image << "P3\n" << nx << " " << ny << "\n255\n";
     for (int i=0; i<nx*ny; i++)
         image << data[i] << "\n";
-    
 	image.close();
 	return 0;
 }
