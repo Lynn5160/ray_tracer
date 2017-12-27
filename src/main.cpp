@@ -13,6 +13,7 @@
 #include "material.h"
 #include "bvh.h"
 #include "aarect.h"
+#include "box.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -94,12 +95,12 @@ hitable *random_scene()
 
 hitable* simple_scene()
 {
-        hitable *list[4];
-        texture* checker = new checker_texture(new constant_texture(vec3(0.2, 0.3, 0.1)), new constant_texture(vec3(0.9, 0.9, 0.9)));
-        list[0] = new sphere(vec3(0,-100.5,-1), 100, new lambertian(checker));
-        list[1] = new moving_sphere(vec3(0,0,-1), vec3(0,0,-1) + vec3(0, 0.25, 0.25), 0.0, 1.0, 0.5, new lambertian(new constant_texture(vec3(0.1, 0.2, 0.5))));
-        list[2] = new sphere(vec3(1,0,-1), 0.5, new metal(vec3(0.8, 0.6, 0.2), 0.0));
-        list[3] = new sphere(vec3(-1,0,-1), 0.5, new dielectric(1.5));
+    hitable *list[4];
+    texture* checker = new checker_texture(new constant_texture(vec3(0.2, 0.3, 0.1)), new constant_texture(vec3(0.9, 0.9, 0.9)));
+    list[0] = new sphere(vec3(0,-100.5,-1), 100, new lambertian(checker));
+    list[1] = new moving_sphere(vec3(0,0,-1), vec3(0,0,-1) + vec3(0, 0.25, 0.25), 0.0, 1.0, 0.5, new lambertian(new constant_texture(vec3(0.1, 0.2, 0.5))));
+    list[2] = new sphere(vec3(1,0,-1), 0.5, new metal(vec3(0.8, 0.6, 0.2), 0.0));
+    list[3] = new sphere(vec3(-1,0,-1), 0.5, new dielectric(1.5));
     
     return  new bvh_node(list, 4, 0.0, 1.0);
 }
@@ -117,7 +118,7 @@ hitable* simple_light()
 
 hitable *cornell_box()
 {
-    hitable **list = new hitable*[6];
+    hitable **list = new hitable*[8];
     int i = 0;
     material *red = new lambertian( new constant_texture(vec3(0.65, 0.05, 0.05)) );
     material *white = new lambertian( new constant_texture(vec3(0.73, 0.73, 0.73)) );
@@ -129,6 +130,8 @@ hitable *cornell_box()
     list[i++] = new flip_normals(new xz_rect(0, 555, 0, 555, 555, white));
     list[i++] = new xz_rect(0, 555, 0, 555, 0, white);
     list[i++] = new flip_normals(new xy_rect(0, 555, 0, 555, 555, white));
+    list[i++] = new translate(new rotate_y(new box(vec3(0, 0, 0), vec3(165, 165, 165), white), -18), vec3(130,0,65));
+    list[i++] = new translate(new rotate_y(new box(vec3(0, 0, 0), vec3(165, 330, 165), white),  15), vec3(265,0,295));
     return new hitable_list(list, i);
 }
 
