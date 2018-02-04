@@ -295,8 +295,10 @@ int main()
     vec3* data = new vec3[nx*ny];
     int tc = std::thread::hardware_concurrency();
     std::thread* threads = new std::thread[tc];
-    for (int i=1; i<=tc; i++) threads[i-1] = std::thread(worker, tc, i, nx, ny, ns, world, cam, data);
-    for (int i=1; i<=tc; i++) threads[i-1].join();
+    for (int i=1; i<=tc; i++)
+        threads[i-1] = std::thread(worker, tc, i, nx, ny, ns, world, cam, data);
+    for (int i=1; i<=tc; i++)
+        threads[i-1].join();
     
     // Image writing
     std::ofstream image;

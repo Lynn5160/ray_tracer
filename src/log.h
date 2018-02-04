@@ -25,10 +25,13 @@ void logVec(const vec3& v)
 }
 
 template<typename T>
-void logVar(const T& var)
+void logVar(const T& var, bool comma=true)
 {
     using namespace std;
-    cout << var << endl;
+    if (comma)
+        cout << var << ",";
+    else
+        cout << var << endl;
 }
 
 template<typename T>
