@@ -16,27 +16,27 @@ using namespace std;
 
 inline float pdf(float x)
 {
-    return 0.5*x;
+    return x * 0.5;
 }
 
 int main()
 {
-    int N = 100;
-    float sum = 0;
+    int n = 10000;
     float r = 0;
+    float sum = 0;
     
-    for (int i=0; i<N; i++)
+    for (int i=0; i<n; i++)
     {
-        r += 0.01;
+        r += 3 * (1.0 / n);
 //        r = drand48();
-        float x = sqrt(4*r);
+        float x = sqrt(4 * r);
         float p = pdf(x);
-        sum += x*x / p;
+        sum += r*r;
 
-        logVec(vec3(r, x*x / p, 0));
+//        logVec(vec3(sum, 0, 0));
     }
 
-    cout << "I = " << sum / N << endl;
+    cout << "I = " << sum / n << endl;
     
     
 //    int N = 100;
