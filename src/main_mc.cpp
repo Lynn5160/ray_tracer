@@ -25,39 +25,57 @@ vec3 random_on_unit_sphere()
     return unit_vector(p);
 }
 
+inline float pdf(float x)
+{
+    return 3 * x*x / 8.0;
+}
+
 inline float pdf(vec3& p)
 {
     return 1 / (4 * M_PI);
 }
 
+
 int main()
 {
-    int n = 100;
-    float r = 0;
+    int n = 10000;
     float sum = 0;
 
     for (int i=0; i<n; i++)
     {
-        r = drand48();
         vec3 d = random_on_unit_sphere();
-        float cosine_squared = d.z() * d.z();
+        float cosine_squared = 1 - (d.x() * d.x());
         sum += cosine_squared / pdf(d);
-        
-        logRay(vec3(0,0,0), d);
+//        logVec(vec3(d.y(), cosine_squared, 0));
     }
-    
-    //    int N = 100;
-    //    float sum = 0;
-    //
-    //    for (int i=0; i<N; i++)
-    //    {
-    //        float x = 2*drand48();
-    //        sum += x*x;
-    //
-    //        logVec(vec3(x, x*x, 0));
-    //    }
-    //
-    //    cout << "I = " << 2 * sum / N << endl;
+     cout << "I = " << sum / n << endl;
+
+
+    // Following integrand exactly
+    // sum = 0;
+    // for (int i=0; i<n; i++)
+    // {
+    //     r += (1.0 / n);
+    //     // r = drand48();
+    //     float x = pow(8 * r, 1.0 / 3.0);
+    //     float t = x*x / pdf(x);
+    //     sum += t;
+
+    //     logVec(vec3(x, 0, 0));
+    // }
+    // cout << "I = " << sum / n << endl;
+
+
+
+    // sum = 0;
+    // for (int i=0; i<n; i++)
+    // {
+    //     float x = 2 * drand48();
+    //     sum += x*x / 0.5;
+
+    //     // logVec(vec3(x, x*x, 0));
+    // }
+    // cout << "I = " << sum / n << endl;
     
     
     //    // MonteCarlo Integration of x^2 over (0, 2)

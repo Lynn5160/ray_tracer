@@ -20,6 +20,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#include <SDL2/SDL.h>
+
 std::mutex locker;
 void worker(int tc, int id, int nx, int ny, int ns, hitable* world, camera* cam, vec3* data);
 
@@ -267,12 +269,10 @@ hitable *cornell_balls()
 int main()
 {
     // Cornell Box
-    hitable* world = final();
+    hitable* world = cornell_box();
     vec3 lookfrom(278, 278, -800);
     vec3 lookat(278,278,0);
-    float dist_to_focus = 10.0;
-    float aperture = 0;
-    float vfov = 40.0;
+
     
 //    Simple Scene
 //    hitable* world = simple_scene();
@@ -289,6 +289,10 @@ int main()
     int ny = 512;
     int ns = 100;
     
+    float dist_to_focus = 10.0;
+    float aperture = 0;
+    float vfov = 40.0;
+    
     camera* cam = new camera(lookfrom, lookat, vec3(0,1,0), vfov, float(nx)/float(ny), aperture, dist_to_focus, 0.0, 1.0);
     
     // Spawning threads
@@ -297,16 +301,60 @@ int main()
     std::thread* threads = new std::thread[tc];
     for (int i=1; i<=tc; i++)
         threads[i-1] = std::thread(worker, tc, i, nx, ny, ns, world, cam, data);
-    for (int i=1; i<=tc; i++)
-        threads[i-1].join();
+    for (int i=1; i<=tc; i++) threads[i-1].join();
     
-    // Image writing
-    std::ofstream image;
-    image.open ("image.ppm");
-    image << "P3\n" << nx << " " << ny << "\n255\n";
-    for (int i=0; i<nx*ny; i++)
-        image << data[i] << "\n";
-	image.close();
+    SDL_Window *win = NULL;
+    SDL_Renderer *renderer = NULL;
+    SDL_Texture *img = NULL;
+    
+    // Initialize SDL.
+    if (SDL_Init(SDL_INIT_VIDEO) < 0)
+        return 1;
+    
+    unsigned int *pixels = new unsigned int[nx*ny];
+    
+    // copy pixels from RGB to ARGB
+    for (int y = 0, idx = 0; y < ny; y++)
+    {
+        for (int x = 0; x < nx; x++, idx++)
+        {
+            unsigned char red = data[idx].x();
+            unsigned char green = data[idx].y();
+            unsigned char blue = data[idx].z();
+            pixels[idx] = (red << 16) + (green << 8) + blue;
+        }
+    }
+    
+    win = SDL_CreateWindow("Image Loading", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, nx, ny, 0);
+    renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
+    img = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, nx, ny);
+    SDL_UpdateTexture(img, NULL, pixels, nx * sizeof(unsigned int));
+    SDL_RenderCopy(renderer, img, NULL, NULL);
+    SDL_RenderPresent(renderer);
+    
+    // wait until the window is closed
+    SDL_Event event;
+    bool quit = false;
+    while (!quit && SDL_WaitEvent(&event))
+    {
+        switch (event.type)
+        {
+            case SDL_QUIT:
+                quit = true;
+                break;
+        }
+    }
+    
+    // free all resources
+    SDL_DestroyTexture(img);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(win);
+    
+    stbi_image_free(data);
+    delete[] pixels;
+    
+    SDL_Quit();
+    
 	return 0;
 }
 
