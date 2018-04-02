@@ -22,8 +22,7 @@
 
 #include <SDL2/SDL.h>
 
-std::mutex locker;
-void worker(int tc, int id, int nx, int ny, int ns, hitable* world, camera* cam, vec3* data);
+void worker(int tc, int id, int nx, int ny, int ns, unsigned int* pixels, hitable* world, camera* cam);
 
 vec3 color(const ray& r, hitable *world, int depth)
 {
@@ -273,7 +272,6 @@ int main()
     vec3 lookfrom(278, 278, -800);
     vec3 lookat(278,278,0);
 
-    
 //    Simple Scene
 //    hitable* world = simple_scene();
 //    hitable *world = simple_light();
@@ -293,72 +291,48 @@ int main()
     float aperture = 0;
     float vfov = 40.0;
     
+    unsigned int *pixels = new unsigned int[nx*ny];
     camera* cam = new camera(lookfrom, lookat, vec3(0,1,0), vfov, float(nx)/float(ny), aperture, dist_to_focus, 0.0, 1.0);
     
-    // Spawning threads
-    vec3* data = new vec3[nx*ny];
-    int tc = std::thread::hardware_concurrency();
-    std::thread* threads = new std::thread[tc];
-    for (int i=1; i<=tc; i++)
-        threads[i-1] = std::thread(worker, tc, i, nx, ny, ns, world, cam, data);
-    for (int i=1; i<=tc; i++) threads[i-1].join();
-    
-    SDL_Window *win = NULL;
-    SDL_Renderer *renderer = NULL;
-    SDL_Texture *img = NULL;
-    
     // Initialize SDL.
+    int pitch = nx * sizeof(unsigned int);
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
         return 1;
     
-    unsigned int *pixels = new unsigned int[nx*ny];
-    
-    // copy pixels from RGB to ARGB
-    for (int y = 0, idx = 0; y < ny; y++)
-    {
-        for (int x = 0; x < nx; x++, idx++)
-        {
-            unsigned char red = data[idx].x();
-            unsigned char green = data[idx].y();
-            unsigned char blue = data[idx].z();
-            pixels[idx] = (red << 16) + (green << 8) + blue;
-        }
-    }
-    
-    win = SDL_CreateWindow("Image Loading", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, nx, ny, 0);
-    renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
-    img = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, nx, ny);
-    SDL_UpdateTexture(img, NULL, pixels, nx * sizeof(unsigned int));
-    SDL_RenderCopy(renderer, img, NULL, NULL);
-    SDL_RenderPresent(renderer);
+    SDL_Window* win = SDL_CreateWindow("Rendering...", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, nx, ny, SDL_WINDOW_ALLOW_HIGHDPI);
+    SDL_Renderer* renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
+    SDL_Texture* img = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, nx, ny);
+
+    // Spawning threads
+    int tc = std::thread::hardware_concurrency();
+    std::thread* threads = new std::thread[tc];
+    for (int i=1; i<=tc; i++) threads[i-1] = std::thread(worker, tc, i, nx, ny, ns, pixels, world, cam);
     
     // wait until the window is closed
     SDL_Event event;
-    bool quit = false;
-    while (!quit && SDL_WaitEvent(&event))
+    while (true)
     {
-        switch (event.type)
-        {
-            case SDL_QUIT:
-                quit = true;
+        if (SDL_PollEvent(&event))
+            if (SDL_QUIT == event.type)
                 break;
-        }
+        
+        SDL_UpdateTexture(img, NULL, pixels, pitch);
+        SDL_RenderCopy(renderer, img, NULL, NULL);
+        SDL_RenderPresent(renderer);
     }
     
+    for (int i=1; i<=tc; i++) threads[i-1].join();
+
     // free all resources
     SDL_DestroyTexture(img);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(win);
-    
-    stbi_image_free(data);
-    delete[] pixels;
-    
     SDL_Quit();
-    
-	return 0;
+	
+    return EXIT_SUCCESS;
 }
 
-void worker(int tc, int id, int nx, int ny, int ns, hitable* world, camera* cam, vec3* data)
+void worker(int tc, int id, int nx, int ny, int ns, unsigned int* pixels, hitable* world, camera* cam)
 {
     int ny1 = ny / tc * id;
     int ny2 = ny1 - (ny / tc);
@@ -391,11 +365,11 @@ void worker(int tc, int id, int nx, int ny, int ns, hitable* world, camera* cam,
             ig = ig <= 255 ? ig: 255;
             ib = ib <= 255 ? ib: 255;
 
-            locker.lock();
-            data[nx*(ny-j-1)+i] = vec3(ir, ig, ib);
-            locker.unlock();
+            std::lock_guard<std::mutex> lg(std::mutex);
+            pixels[nx * (ny-j-1) + i] = (ir << 16) + (ig << 8) + ib;
         }
     }
+
 }
 
 
