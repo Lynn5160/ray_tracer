@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <thread>
+#include <chrono>
 #include <mutex>
 #include <vector>
 
@@ -22,6 +23,8 @@
 
 #include <SDL2/SDL.h>
 
+using namespace std;
+
 void worker(int tc, int id, int nx, int ny, int ns, unsigned int* pixels, hitable* world, camera* cam);
 
 vec3 color(const ray& r, hitable *world, int depth)
@@ -32,14 +35,11 @@ vec3 color(const ray& r, hitable *world, int depth)
         ray scattered;
         vec3 attenuation;
         vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
+        
         if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered))
-        {
             return emitted + attenuation*color(scattered, world, depth+1);
-        }
         else
-        {
             return emitted;
-        }
     }
     else
     {
@@ -267,14 +267,13 @@ hitable *cornell_balls()
 
 int main()
 {
-    // Cornell Box
+//    // Cornell Box
     hitable* world = cornell_box();
     vec3 lookfrom(278, 278, -800);
     vec3 lookat(278,278,0);
 
 //    Simple Scene
 //    hitable* world = simple_scene();
-//    hitable *world = simple_light();
 //    vec3 lookfrom(13,2,3);
 //    vec3 lookat(0, 0, -1);
     
@@ -304,9 +303,9 @@ int main()
     SDL_Texture* img = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, nx, ny);
 
     // Spawning threads
-    int tc = std::thread::hardware_concurrency();
-    std::thread* threads = new std::thread[tc];
-    for (int i=1; i<=tc; i++) threads[i-1] = std::thread(worker, tc, i, nx, ny, ns, pixels, world, cam);
+    int threadCount = thread::hardware_concurrency();
+    thread* threads = new thread[threadCount];
+    for (int id=0; id<threadCount; id++) threads[id] = thread(worker, threadCount, id, nx, ny, ns, pixels, world, cam);
     
     // wait until the window is closed
     SDL_Event event;
@@ -319,9 +318,10 @@ int main()
         SDL_UpdateTexture(img, NULL, pixels, pitch);
         SDL_RenderCopy(renderer, img, NULL, NULL);
         SDL_RenderPresent(renderer);
+        this_thread::sleep_for(chrono::milliseconds(20));
     }
     
-    for (int i=1; i<=tc; i++) threads[i-1].join();
+    for (int id=0; id<threadCount; id++) threads[id].join();
 
     // free all resources
     SDL_DestroyTexture(img);
@@ -334,7 +334,7 @@ int main()
 
 void worker(int tc, int id, int nx, int ny, int ns, unsigned int* pixels, hitable* world, camera* cam)
 {
-    int ny1 = ny / tc * id;
+    int ny1 = ny / tc * (id+1);
     int ny2 = ny1 - (ny / tc);
     
     for (int j = ny1-1; j >= ny2; j--)
@@ -359,17 +359,11 @@ void worker(int tc, int id, int nx, int ny, int ns, unsigned int* pixels, hitabl
             int ir = int(255.99*col[0]);
             int ig = int(255.99*col[1]);
             int ib = int(255.99*col[2]);
-            
-            // Clamping for 8 bit
-            ir = ir <= 255 ? ir: 255;
-            ig = ig <= 255 ? ig: 255;
-            ib = ib <= 255 ? ib: 255;
 
-            std::lock_guard<std::mutex> lg(std::mutex);
+            lock_guard<mutex> lg(mutex);
             pixels[nx * (ny-j-1) + i] = (ir << 16) + (ig << 8) + ib;
         }
     }
-
 }
 
 
