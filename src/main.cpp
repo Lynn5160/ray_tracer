@@ -337,36 +337,40 @@ void worker(int tc, int id, int nx, int ny, int ns, unsigned int* pixels, hitabl
     int ny1 = ny / tc * (id+1);
     int ny2 = ny1 - (ny / tc);
     
-    for (int j = ny1-1; j >= ny2; j--)
+    vector<vec3> colors;
+    colors.reserve(nx*ny);
+    
+    for (int s=0; s < ns; s++)
     {
-        for (int i=0; i<nx; i++)
+        for (int j = ny1-1; j >= ny2; j--)
         {
-            vec3 col(0, 0, 0);
-            
-            for (int s=0; s < ns; s++)
+            for (int i=0; i<nx; i++)
             {
+                int idx = nx * (ny-j-1) + i;
+
                 float u = float(i + drand48()) / float(nx);
                 float v = float(j + drand48()) / float(ny);
                 
                 ray r = cam->get_ray(u, v);
-                col += color(r, world, 0);
+                
+                colors[idx] += color(r, world, 0);
+            
+                vec3 col = colors[idx] / float(s+1);
+                col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
+            
+                // Converting to integers
+                int ir = int(255.99*col[0]);
+                int ig = int(255.99*col[1]);
+                int ib = int(255.99*col[2]);
+            
+                // Clamping for 8 bit
+                ir = ir <= 255 ? ir: 255;
+                ig = ig <= 255 ? ig: 255;
+                ib = ib <= 255 ? ib: 255;
+            
+                lock_guard<mutex> lg(mutex);
+                pixels[idx] = (ir << 16) + (ig << 8) + ib;
             }
-            
-            col /= float(ns);
-            col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
-            
-            // Converting to integers
-            int ir = int(255.99*col[0]);
-            int ig = int(255.99*col[1]);
-            int ib = int(255.99*col[2]);
-            
-            // Clamping for 8 bit
-            ir = ir <= 255 ? ir: 255;
-            ig = ig <= 255 ? ig: 255;
-            ib = ib <= 255 ? ib: 255;
-            
-            lock_guard<mutex> lg(mutex);
-            pixels[nx * (ny-j-1) + i] = (ir << 16) + (ig << 8) + ib;
         }
     }
 }
