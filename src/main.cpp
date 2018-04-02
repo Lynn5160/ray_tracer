@@ -307,7 +307,7 @@ int main()
     thread* threads = new thread[threadCount];
     for (int id=0; id<threadCount; id++) threads[id] = thread(worker, threadCount, id, nx, ny, ns, pixels, world, cam);
     
-    // wait until the window is closed
+    // Wait until the window is closed
     SDL_Event event;
     while (true)
     {
@@ -321,7 +321,7 @@ int main()
         this_thread::sleep_for(chrono::milliseconds(20));
     }
     
-    for (int id=0; id<threadCount; id++) threads[id].join();
+//    for (int id=0; id<threadCount; id++) threads[id].join();
 
     // free all resources
     SDL_DestroyTexture(img);
@@ -359,7 +359,12 @@ void worker(int tc, int id, int nx, int ny, int ns, unsigned int* pixels, hitabl
             int ir = int(255.99*col[0]);
             int ig = int(255.99*col[1]);
             int ib = int(255.99*col[2]);
-
+            
+            // Clamping for 8 bit
+            ir = ir <= 255 ? ir: 255;
+            ig = ig <= 255 ? ig: 255;
+            ib = ib <= 255 ? ib: 255;
+            
             lock_guard<mutex> lg(mutex);
             pixels[nx * (ny-j-1) + i] = (ir << 16) + (ig << 8) + ib;
         }
