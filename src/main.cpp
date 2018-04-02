@@ -320,8 +320,6 @@ int main()
         SDL_RenderPresent(renderer);
         this_thread::sleep_for(chrono::milliseconds(20));
     }
-    
-//    for (int id=0; id<threadCount; id++) threads[id].join();
 
     // free all resources
     SDL_DestroyTexture(img);
