@@ -27,7 +27,7 @@ vec3 random_on_unit_sphere()
 
 inline float pdf(float x)
 {
-    return 3 * x*x / 8.0;
+    return x / 36.0;
 }
 
 inline float pdf(vec3& p)
@@ -38,47 +38,57 @@ inline float pdf(vec3& p)
 
 int main()
 {
-    int n = 10000;
+    int n = 100000;
     float sum = 0;
 
     for (int i=0; i<n; i++)
     {
         vec3 d = random_on_unit_sphere();
-        float cosine_squared = 1 - (d.x() * d.x());
+        float cosine_squared = 1 - d.y() * d.y();
         sum += cosine_squared / pdf(d);
-//        logVec(vec3(d.y(), cosine_squared, 0));
+//        logRay(vec3(0,0,0), d);
     }
      cout << "I = " << sum / n << endl;
 
 
-    // Following integrand exactly
-    // sum = 0;
-    // for (int i=0; i<n; i++)
-    // {
-    //     r += (1.0 / n);
-    //     // r = drand48();
-    //     float x = pow(8 * r, 1.0 / 3.0);
-    //     float t = x*x / pdf(x);
-    //     sum += t;
+//   // Following integrand exactly
+//    sum = 0;
+//    float r = 0.0;
+//    for (int i=0; i<n; i++)
+//    {
+//        r += (1.0 / n);
+////        r = drand/48();
+//        float x = pow(8 * r, 1.0 / 3.0);
+//        float t = x*x / pdf(x);
+//        sum += t;
+//
+//        logVec(vec3(x, 0, 0));
+//    }
+//    cout << "I = " << sum / n << endl;
 
-    //     logVec(vec3(x, 0, 0));
-    // }
-    // cout << "I = " << sum / n << endl;
 
 
+//     sum = 0;
+//     for (int i=0; i<n; i++)
+//     {
+//         float r = drand48();
+//         float x = sqrt(4 * r);
+//         sum += x*x / pdf(x);
+//     }
+//     cout << "I = " << sum / n << endl;
 
-    // sum = 0;
-    // for (int i=0; i<n; i++)
-    // {
-    //     float x = 2 * drand48();
-    //     sum += x*x / 0.5;
-
-    //     // logVec(vec3(x, x*x, 0));
-    // }
-    // cout << "I = " << sum / n << endl;
     
+//    // Rectangles over (0,1)
+//    sum = 0;
+//    for (int i=0; i<n; i++)
+//    {
+//        float x = pow(i-2, 1) / pow(n,3);
+//        sum += x;
+//    }
+//    cout << "I = " << sum << endl;
+//
     
-    //    // MonteCarlo Integration of x^2 over (0, 2)
+    //    // MonteCarlo Integration of x^2 over  (0, 2)
     //    int n = 100000;
     //    int samples = 0;
     //    float sum = 0;

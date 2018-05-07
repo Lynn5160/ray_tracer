@@ -35,9 +35,11 @@ vec3 color(const ray& r, hitable *world, int depth)
         ray scattered;
         vec3 attenuation;
         vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
+        float pdf;
+        vec3 albedo;
         
-        if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered))
-            return emitted + attenuation*color(scattered, world, depth+1);
+        if (depth < 5 && rec.mat_ptr->scatter(r, rec, albedo, scattered, pdf))
+            return emitted + albedo * rec.mat_ptr->scattering_pdf(r, rec, scattered) * color(scattered, world, depth+1) / pdf;
         else
             return emitted;
     }
@@ -274,9 +276,9 @@ int main()
 
 //    Simple Scene
 //    hitable* world = simple_scene();
-//    vec3 lookfrom(13,2,3);
+//    vec3 lookfrom(5,2,3);
 //    vec3 lookat(0, 0, -1);
-    
+//
 //    Random Scene
 //    hitable *world = random_scene();
 //    vec3 lookfrom(13,2,3);
@@ -284,7 +286,7 @@ int main()
 
     int nx = 512;
     int ny = 512;
-    int ns = 100;
+    int ns = 50;
     
     float dist_to_focus = 10.0;
     float aperture = 0;
