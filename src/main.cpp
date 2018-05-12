@@ -38,7 +38,7 @@ vec3 color(const ray& r, hitable *world, int depth)
         float pdf;
         vec3 albedo;
         
-        if (depth < 5 && rec.mat_ptr->scatter(r, rec, albedo, scattered, pdf))
+        if (depth < 3 && rec.mat_ptr->scatter(r, rec, albedo, scattered, pdf))
             return emitted + albedo * rec.mat_ptr->scattering_pdf(r, rec, scattered) * color(scattered, world, depth+1) / pdf;
         else
             return emitted;
@@ -229,7 +229,7 @@ hitable *cornell_smoke()
 
 hitable *cornell_box()
 {
-    hitable **list = new hitable*[8];
+    hitable **list = new hitable*[9];
     int i = 0;
     material *red = new lambertian( new constant_texture(vec3(0.65, 0.05, 0.05)) );
     material *white = new lambertian( new constant_texture(vec3(0.73, 0.73, 0.73)) );
@@ -243,6 +243,7 @@ hitable *cornell_box()
     list[i++] = new flip_normals(new xy_rect(0, 555, 0, 555, 555, white));
     list[i++] = new translate(new rotate_y(new box(vec3(0, 0, 0), vec3(165, 165, 165), white), -18), vec3(130,0,65));
     list[i++] = new translate(new rotate_y(new box(vec3(0, 0, 0), vec3(165, 330, 165), white),  15), vec3(265,0,295));
+    list[i++] = new sphere(vec3(200, 250, 200), 50, white);
     return new hitable_list(list, i);
 }
 
@@ -286,7 +287,7 @@ int main()
 
     int nx = 512;
     int ny = 512;
-    int ns = 50;
+    int ns = 500;
     
     float dist_to_focus = 10.0;
     float aperture = 0;
@@ -343,7 +344,6 @@ void worker(int tc, int id, int nx, int ny, int ns, unsigned int* pixels, hitabl
         for (int i=0; i < nx; i++)
         {
             vec3 col(0, 0, 0);
-            
             for (int s=0; s < ns; s++)
             {
                 float u = float(i + drand48()) / float(nx);

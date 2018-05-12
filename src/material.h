@@ -29,7 +29,6 @@ bool refract(const vec3& v, const vec3& n, float ni_over_nt, vec3& refracted)
         return false;
 }
 
-
 vec3 reflect(const vec3& v, const vec3& n)
 {
     return v - 2*dot(v,n)*n;
@@ -81,10 +80,22 @@ public:
     
     bool scatter(const ray& r_in, const hit_record& rec, vec3& alb, ray& scattered, float& pdf) const
     {
-        vec3 target = rec.p + rec.normal + random_in_unit_sphere();
-        scattered = ray(rec.p, target-rec.p, r_in.time());
+        vec3 direction;
+        do
+        {
+            direction = random_in_unit_sphere();
+        }
+        while ( dot(direction, rec.normal) < 0 );
+
+        scattered = ray(rec.p, unit_vector(direction), r_in.time());
         alb = albedo->value(rec.u, rec.v, rec.p);
-        pdf = dot(rec.normal, scattered.direction()) / M_PI;
+        pdf = 0.5 / M_PI;
+
+//        vec3 target = rec.p + rec.normal + random_in_unit_sphere();
+//        scattered = ray(rec.p, target-rec.p, r_in.time());
+//        alb = albedo->value(rec.u, rec.v, rec.p);
+//        pdf = dot(rec.normal, scattered.direction()) / M_PI;
+        
         return true;
     }
     texture* albedo;
