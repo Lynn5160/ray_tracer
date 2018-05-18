@@ -39,7 +39,10 @@ vec3 color(const ray& r, hitable *world, int depth)
         vec3 albedo;
         
         if (depth < 3 && rec.mat_ptr->scatter(r, rec, albedo, scattered, pdf))
+        {
+//            vec3 on_light = vec3(213 * drand48(), );
             return emitted + albedo * rec.mat_ptr->scattering_pdf(r, rec, scattered) * color(scattered, world, depth+1) / pdf;
+        }
         else
             return emitted;
     }

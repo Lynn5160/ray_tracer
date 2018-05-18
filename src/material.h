@@ -3,10 +3,12 @@
 
 struct hit_record;
 
+#include "onb.h"
 #include "ray.h"
 #include "hitable.h"
 #include "texture.h"
 #include "surface_texture.h"
+
 
 
 float schlick(float cosine, float ref_idx)
@@ -46,6 +48,19 @@ vec3 random_in_unit_sphere()
     return p;
 }
 
+inline vec3 random_cosine_direction()
+{
+    float r1 = drand48();
+    float r2 = drand48();
+    float z  = sqrt(1 - r2);
+    float phi = 2 * M_PI * r1;
+    float x = cos(phi) * 2 * sqrt(r2);
+    float y = sin(phi) * 2 * sqrt(r2);
+    return vec3(x, y, z);
+}
+
+
+
 // Material Base Class
 class material
 {
@@ -80,21 +95,23 @@ public:
     
     bool scatter(const ray& r_in, const hit_record& rec, vec3& alb, ray& scattered, float& pdf) const
     {
-        vec3 direction;
-        do
-        {
-            direction = random_in_unit_sphere();
-        }
-        while ( dot(direction, rec.normal) < 0 );
+//        vec3 direction;
+//        do
+//        {
+//            direction = random_in_unit_sphere();
+//        }
+//        while ( dot(direction, rec.normal) < 0 );
+//
+//        scattered = ray(rec.p, unit_vector(direction), r_in.time());
+//        alb = albedo->value(rec.u, rec.v, rec.p);
+//        pdf = 0.5 / M_PI;
 
+        onb uvw;
+        uvw.build_from_w(rec.normal);
+        vec3 direction = uvw.local( random_cosine_direction() );
         scattered = ray(rec.p, unit_vector(direction), r_in.time());
         alb = albedo->value(rec.u, rec.v, rec.p);
-        pdf = 0.5 / M_PI;
-
-//        vec3 target = rec.p + rec.normal + random_in_unit_sphere();
-//        scattered = ray(rec.p, target-rec.p, r_in.time());
-//        alb = albedo->value(rec.u, rec.v, rec.p);
-//        pdf = dot(rec.normal, scattered.direction()) / M_PI;
+        pdf = dot(rec.normal, scattered.direction()) / M_PI;
         
         return true;
     }
