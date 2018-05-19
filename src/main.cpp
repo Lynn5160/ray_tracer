@@ -37,8 +37,10 @@ vec3 color(const ray& r, hitable *world, int depth)
         vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
         float pdf;
         vec3 albedo;
+
+//        if (depth > 1) logRay(r, rec.t); // Plot Rays
         
-        if (depth < 50 && rec.mat_ptr->scatter(r, rec, albedo, scattered, pdf))
+        if (depth < 3 && rec.mat_ptr->scatter(r, rec, albedo, scattered, pdf))
         {
             vec3 on_light = vec3(213 + drand48() * (243-213), 554, 227 + drand48() * (332-227));
             vec3 to_light = on_light - rec.p;
@@ -56,19 +58,14 @@ vec3 color(const ray& r, hitable *world, int depth)
             
             pdf = distance_squared / (light_cosine * light_area);
             scattered  = ray(rec.p, to_light, r.time());
-                
+
             return emitted + albedo * rec.mat_ptr->scattering_pdf(r, rec, scattered) * color(scattered, world, depth+1) / pdf;
         }
         else
             return emitted;
     }
     else
-    {
-//        vec3 unit_direction = unit_vector(r.direction());
-//        float t = 0.5*(unit_direction.y() + 1.0);
-//        return (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
         return vec3(0,0,0);
-    }
 }
 
 
@@ -101,7 +98,7 @@ int main()
 
     int nx = 512;
     int ny = 512;
-    int ns = 100;
+    int ns = 10;
     
     float dist_to_focus = 10.0;
     float aperture = 0;
@@ -120,7 +117,8 @@ int main()
     SDL_Texture* img = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, nx, ny);
 
     // Spawning threads
-    int threadCount = thread::hardware_concurrency();
+    int threadCount = 1;
+    threadCount = thread::hardware_concurrency(); // Enable Multithreading
     thread* threads = new thread[threadCount];
     for (int id=0; id<threadCount; id++)
         threads[id] = thread(worker, threadCount, id, nx, ny, ns, pixels, world, cam);
@@ -175,7 +173,7 @@ void worker(int tc, int id, int nx, int ny, int ns, unsigned int* pixels, hitabl
             int ig = int(255.99*col[1]);
             int ib = int(255.99*col[2]);
             
-            lock_guard<mutex> lg(mutex);
+            lock_guard<mutex> lock(mutex);
             pixels[nx * (ny-j-1) + i] = (ir << 16) + (ig << 8) + ib;
         }
     }
