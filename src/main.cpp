@@ -1,9 +1,8 @@
-#include <iostream>
-#include <fstream>
-#include <thread>
-#include <chrono>
 #include <mutex>
+#include <thread>
 #include <vector>
+
+#include <SDL2/SDL.h>
 
 #include "log.h"
 #include "sphere.h"
@@ -18,14 +17,9 @@
 #include "constant_medium.h"
 #include "surface_texture.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
-#include <SDL2/SDL.h>
-
 using namespace std;
 
-void worker(int tc, int id, int nx, int ny, int ns, unsigned int* pixels, hitable* world, camera* cam);
+void worker(bool* kill, int tc, int id, int nx, int ny, int ns, vector<vec3>* sum_pixels, unsigned int* pixels, hitable* world, camera* cam);
 
 vec3 color(const ray& r, hitable *world, int depth)
 {
@@ -89,41 +83,17 @@ hitable *cornell_box()
     return new hitable_list(list, i);
 }
 
-int main()
+void show_window(int w, int h, unsigned int *pixels)
 {
-//    // Cornell Box
-    hitable* world = cornell_box();
-    vec3 lookfrom(278, 278, -800);
-    vec3 lookat(278,278,0);
-
-    int nx = 512;
-    int ny = 512;
-    int ns = 10;
-    
-    float dist_to_focus = 10.0;
-    float aperture = 0;
-    float vfov = 40.0;
-    
-    unsigned int *pixels = new unsigned int[nx*ny];
-    camera* cam = new camera(lookfrom, lookat, vec3(0,1,0), vfov, float(nx)/float(ny), aperture, dist_to_focus, 0.0, 1.0);
-    
     // Initialize SDL.
-    int pitch = nx * sizeof(unsigned int);
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
-        return 1;
+        return ;
     
-    SDL_Window* win = SDL_CreateWindow("Rendering...", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, nx, ny, SDL_WINDOW_ALLOW_HIGHDPI);
+    SDL_Window* win = SDL_CreateWindow("pRat", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_ALLOW_HIGHDPI);
     SDL_Renderer* renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
-    SDL_Texture* img = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, nx, ny);
-
-    // Spawning threads
-    int threadCount = 1;
-    threadCount = thread::hardware_concurrency(); // Enable Multithreading
-    thread* threads = new thread[threadCount];
-    for (int id=0; id<threadCount; id++)
-        threads[id] = thread(worker, threadCount, id, nx, ny, ns, pixels, world, cam);
+    SDL_Texture* img = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, w, h);
     
-    // Wait until the window is closed
+    int pitch = w * sizeof(unsigned int);
     SDL_Event event;
     while (true)
     {
@@ -136,45 +106,88 @@ int main()
         SDL_RenderPresent(renderer);
         this_thread::sleep_for(chrono::milliseconds(20));
     }
-
+    
     // free all resources
     SDL_DestroyTexture(img);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(win);
     SDL_Quit();
-	
+}
+
+int main()
+{
+    // Cornell Box
+    hitable* world = cornell_box();
+    vec3 lookfrom(278, 278, -800);
+    vec3 lookat(278,278,0);
+
+    int nx = 512;
+    int ny = 512;
+    int ns = 100;
+    
+    float dist_to_focus = 10.0;
+    float aperture = 0;
+    float vfov = 40.0;
+    
+    unsigned int *pixels = new unsigned int[nx*ny];
+    vector<vec3> sum_pixels;
+    sum_pixels.resize(nx*ny);
+    camera* cam = new camera(lookfrom, lookat, vec3(0,1,0), vfov, float(nx)/float(ny), aperture, dist_to_focus, 0.0, 1.0);
+    
+    // Spawning threads
+    bool kill_thread = false;
+    int threadCount = 1;
+    threadCount = thread::hardware_concurrency(); // Enable Multithreading
+    thread* threads = new thread[threadCount];
+    for (int id=0; id<threadCount; id++)
+        threads[id] = thread(worker, &kill_thread, threadCount, id, nx, ny, ns, &sum_pixels, pixels, world, cam);
+    
+    // Wait until the window is closed
+    show_window(nx, ny, pixels);
+    
+    // Terminate threads
+    kill_thread = true;
+    for (int id=0; id<threadCount; id++)
+        threads[id].join();
+    
     return EXIT_SUCCESS;
 }
 
-void worker(int tc, int id, int nx, int ny, int ns, unsigned int* pixels, hitable* world, camera* cam)
+void worker(bool* kill, int tc, int id, int nx, int ny, int ns, vector<vec3>* sum_pixels, unsigned int* pixels, hitable* world, camera* cam)
 {
     int ny1 = ny / tc * (++id);
     int ny2 = ny1 - (ny / tc);
-    
-    for (int j = ny1-1; j >= ny2; j--)
+
+    for (int s=0; s < ns; s++)
     {
-        for (int i=0; i < nx; i++)
+        for (int j = ny1-1; j >= ny2; j--)
         {
-            vec3 col(0, 0, 0);
-            for (int s=0; s < ns; s++)
+            for (int i=0; i < nx; i++)
             {
+                if (*kill)
+                    return;
+                
+                int idx = nx * (ny-j-1) + i;
+                
                 float u = float(i + drand48()) / float(nx);
                 float v = float(j + drand48()) / float(ny);
-                
                 ray r = cam->get_ray(u, v);
-                col += color(r, world, 0);
+                vec3 col = color(r, world, 0);
+                sum_pixels->at(idx) += col;
+
+                if (s > 0)
+                    col = sum_pixels->at(idx) / (s+1);
+            
+                col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
+                
+                // Converting to integers
+                int ir = int(255.99*col[0]);
+                int ig = int(255.99*col[1]);
+                int ib = int(255.99*col[2]);
+                
+                lock_guard<mutex> lock(mutex);
+                pixels[idx] = (ir << 16) + (ig << 8) + ib;
             }
-            
-            col /= float(ns);
-            col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
-            
-            // Converting to integers
-            int ir = int(255.99*col[0]);
-            int ig = int(255.99*col[1]);
-            int ib = int(255.99*col[2]);
-            
-            lock_guard<mutex> lock(mutex);
-            pixels[nx * (ny-j-1) + i] = (ir << 16) + (ig << 8) + ib;
         }
     }
 }
