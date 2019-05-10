@@ -76,7 +76,7 @@ int main()
 {
     int nx = 1024;
     int ny = 512;
-    int ns = 100;
+    int ns = 200;
     
     unsigned int *pixels = new unsigned int[nx*ny];
     vector<vec3> sum_pixels;
@@ -105,9 +105,6 @@ int main()
     kill = true;
     for (int id=0; id<threadCount; id++)
         threads[id].join();
-    
-    // Wait until the window is closed
-    show_window(nx, ny, pixels);
     
     return EXIT_SUCCESS;
 }
