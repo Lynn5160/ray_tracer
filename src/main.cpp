@@ -1,3 +1,4 @@
+#include <mutex>
 #include <thread>
 #include <SDL2/SDL.h>
 
@@ -6,8 +7,11 @@
 #include "sphere.h"
 #include "hitable.h"
 #include "hitable_list.h"
+#include "camera.h"
 
 using namespace std;
+
+void worker(bool* kill, int tc, int id, int nx, int ny, int ns, unsigned int* pixels, hitable* world, camera* cam);
 
 void show_window(int w, int h, unsigned int *pixels)
 {
@@ -57,13 +61,9 @@ int main()
 {
     int nx = 1024;
     int ny = 512;
+    int ns = 100;
     
     unsigned int *pixels = new unsigned int[nx*ny];
-    
-    vec3 lower_left_corner(-2.0, -1.0, -1.0);
-    vec3 horizontal(4.0, 0.0, 0.0);
-    vec3 vertical(0.0, 2.0, 0.0);
-    vec3 origin(0.0, 0.0, 0.0);
     
     hitable* list[2];
     
@@ -71,27 +71,23 @@ int main()
     list[1] = new sphere(vec3(0, -100.5, -1), 100);
     
     hitable* world = new hitable_list(list, 2);
+    camera* cam = new camera();
+        
+    // Spawning threads
+    bool kill = false;
+    int threadCount = 1;
+    threadCount = thread::hardware_concurrency(); // Enable Multithreading
+    thread* threads = new thread[threadCount];
+    for (int id=0; id<threadCount; id++)
+        threads[id] = thread(worker, &kill, threadCount, id, nx, ny, ns, pixels, world, cam);
     
-    for (int j = ny-1; j >= 0; j--)
-    {
-        for (int i=0; i < nx; i++)
-        {
-            float u = float(i) / float(nx);
-            float v = float(j) / float(ny);
-            
-            ray r(origin, lower_left_corner + (u * horizontal) + (v * vertical));
-            
-            vec3 col = color(r, world);
-
-            // Converting to integers
-            int ir = int(255.99 * col[0]);
-            int ig = int(255.99 * col[1]);
-            int ib = int(255.99 * col[2]);
-            
-            int idx = nx * (ny-j-1) + i;
-            pixels[idx] = (ir << 16) + (ig << 8) + ib;
-        }
-    }
+    // Wait until the window is closed
+    show_window(nx, ny, pixels);
+    
+    // Terminate threads
+    kill = true;
+    for (int id=0; id<threadCount; id++)
+        threads[id].join();
     
     // Wait until the window is closed
     show_window(nx, ny, pixels);
@@ -99,5 +95,38 @@ int main()
     return EXIT_SUCCESS;
 }
 
+void worker(bool* kill, int tc, int id, int nx, int ny, int ns, unsigned int* pixels, hitable* world, camera* cam)
+{
+    int ny1 = ny / tc * (++id);
+    int ny2 = ny1 - (ny / tc);
+    
+    for (int j = ny1-1; j >= ny2; j--)
+    {
+        for (int i=0; i < nx; i++)
+        {
+            if (*kill)
+                return;
 
+            vec3 col(0, 0, 0);
+            for(int s=0; s < ns; s++)
+            {
+                float u = float(i + drand48()) / float(nx);
+                float v = float(j + drand48()) / float(ny);
 
+                ray r = cam->get_ray(u, v);
+                col += color(r, world);
+            }
+
+            col /= float(ns);
+
+            // Converting to integers
+            int ir = int(255.99 * col[0]);
+            int ig = int(255.99 * col[1]);
+            int ib = int(255.99 * col[2]);
+
+            int idx = nx * (ny-j-1) + i;
+            lock_guard<mutex> lock(mutex);
+            pixels[idx] = (ir << 16) + (ig << 8) + ib;
+        }
+    }
+}
