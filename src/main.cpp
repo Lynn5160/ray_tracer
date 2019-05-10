@@ -45,8 +45,6 @@ int main()
     {
         for (int i=0; i < nx; i++)
         {
-            int idx = nx * (ny-j-1) + i;
-            
             float r = float(i) / float(nx);
             float g = float(j) / float(nx);
             float b = 0.0;
@@ -56,6 +54,7 @@ int main()
             int ig = int(255.99 * g);
             int ib = int(255.99 * b);
             
+            int idx = nx * (ny-j-1) + i;
             pixels[idx] = (ir << 16) + (ig << 8) + ib;
         }
     }
