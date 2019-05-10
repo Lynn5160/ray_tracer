@@ -23,7 +23,7 @@ set_target_properties( pRat
   PROPERTIES
   LINKER_LANGUAGE CXX
   PREFIX ""
-  OUTPUT_NAME "pRat"
+  OUTPUT_NAME "../bin/pRat"
   )
 
 target_link_libraries( pRat ${SDL2_LIBRARIES} )
