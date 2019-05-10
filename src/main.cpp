@@ -1,5 +1,6 @@
 #include <mutex>
 #include <thread>
+#include <vector>
 #include <SDL2/SDL.h>
 
 #include "vec3.h"
@@ -11,7 +12,7 @@
 
 using namespace std;
 
-void worker(bool* kill, int tc, int id, int nx, int ny, int ns, unsigned int* pixels, hitable* world, camera* cam);
+void worker(bool* kill, int tc, int id, int nx, int ny, int ns, vector<vec3>* sum_pixels, unsigned int* pixels, hitable* world, camera* cam);
 
 void show_window(int w, int h, unsigned int *pixels)
 {
@@ -78,6 +79,8 @@ int main()
     int ns = 100;
     
     unsigned int *pixels = new unsigned int[nx*ny];
+    vector<vec3> sum_pixels;
+    sum_pixels.resize(nx*ny);
     
     hitable* list[2];
     
@@ -93,8 +96,8 @@ int main()
     threadCount = thread::hardware_concurrency(); // Enable Multithreading
     thread* threads = new thread[threadCount];
     for (int id=0; id<threadCount; id++)
-        threads[id] = thread(worker, &kill, threadCount, id, nx, ny, ns, pixels, world, cam);
-    
+        threads[id] = thread(worker, &kill, threadCount, id, nx, ny, ns, &sum_pixels, pixels, world, cam);
+
     // Wait until the window is closed
     show_window(nx, ny, pixels);
     
@@ -109,40 +112,42 @@ int main()
     return EXIT_SUCCESS;
 }
 
-void worker(bool* kill, int tc, int id, int nx, int ny, int ns, unsigned int* pixels, hitable* world, camera* cam)
+void worker(bool* kill, int tc, int id, int nx, int ny, int ns, vector<vec3>* sum_pixels, unsigned int* pixels, hitable* world, camera* cam)
 {
     int ny1 = ny / tc * (++id);
     int ny2 = ny1 - (ny / tc);
     
-    for (int j = ny1-1; j >= ny2; j--)
+    for (int s=0; s < ns; s++)
     {
-        for (int i=0; i < nx; i++)
+        for (int j = ny1-1; j >= ny2; j--)
         {
-            if (*kill)
-                return;
-
-            vec3 col(0, 0, 0);
-            for(int s=0; s < ns; s++)
+            for (int i=0; i < nx; i++)
             {
+                if (*kill)
+                    return;
+                
+                int idx = nx * (ny-j-1) + i;
+                
                 float u = float(i + drand48()) / float(nx);
                 float v = float(j + drand48()) / float(ny);
 
                 ray r = cam->get_ray(u, v);
-                col += color(r, world);
+                vec3 col = color(r, world);
+                sum_pixels->at(idx) += col;
+                
+                if (s > 0)
+                    col = sum_pixels->at(idx) / (s+1);
+                
+                col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
+
+                // Converting to integers
+                int ir = int(255.99 * col[0]);
+                int ig = int(255.99 * col[1]);
+                int ib = int(255.99 * col[2]);
+
+                lock_guard<mutex> lock(mutex);
+                pixels[idx] = (ir << 16) + (ig << 8) + ib;
             }
-
-            col /= float(ns);
-            
-            col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
-
-            // Converting to integers
-            int ir = int(255.99 * col[0]);
-            int ig = int(255.99 * col[1]);
-            int ib = int(255.99 * col[2]);
-
-            int idx = nx * (ny-j-1) + i;
-            lock_guard<mutex> lock(mutex);
-            pixels[idx] = (ir << 16) + (ig << 8) + ib;
         }
     }
 }
