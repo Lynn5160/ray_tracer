@@ -106,9 +106,6 @@ int main()
     for (int id=0; id<threadCount; id++)
         threads[id].join();
     
-    // Wait until the window is closed
-    show_window(nx, ny, pixels);
-    
     return EXIT_SUCCESS;
 }
 
