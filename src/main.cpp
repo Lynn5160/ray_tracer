@@ -1,6 +1,8 @@
 #include <thread>
 #include <SDL2/SDL.h>
 
+#include "vec3.h"
+
 using namespace std;
 
 void show_window(int w, int h, unsigned int *pixels)
@@ -45,14 +47,12 @@ int main()
     {
         for (int i=0; i < nx; i++)
         {
-            float r = float(i) / float(nx);
-            float g = float(j) / float(nx);
-            float b = 0.0;
+            vec3 col(float(i) / float(nx), float(j) / float(ny), 0.0);
             
             // Converting to integers
-            int ir = int(255.99 * r);
-            int ig = int(255.99 * g);
-            int ib = int(255.99 * b);
+            int ir = int(255.99 * col[0]);
+            int ig = int(255.99 * col[1]);
+            int ib = int(255.99 * col[2]);
             
             int idx = nx * (ny-j-1) + i;
             pixels[idx] = (ir << 16) + (ig << 8) + ib;
