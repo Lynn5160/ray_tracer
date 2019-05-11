@@ -1,6 +1,7 @@
 #include <mutex>
 #include <thread>
 #include <vector>
+
 #include <SDL2/SDL.h>
 
 #include "vec3.h"
