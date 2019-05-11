@@ -38,3 +38,4 @@ cmake/CMakeFiles/pRat.dir/link.txt
 cmake/CMakeFiles/pRat.dir/progress.make
 cmake/CMakeFiles/pRat.dir/src/main.cpp.o
 src/.DS_Store
+.vscode/settings.json
