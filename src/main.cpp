@@ -4,7 +4,6 @@
 
 #include <SDL2/SDL.h>
 
-// #include "vec3.h"
 #include "ray.h"
 #include "sphere.h"
 #include "hitable_list.h"
