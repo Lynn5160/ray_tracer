@@ -73,7 +73,7 @@ vec3 color(const ray& r, hitable* world, int depth)
 int main()
 {
     int nx = 1024;
-    int ny = 1024;
+    int ny = 512;
     int ns = 1000;
     
     vec3* samples = new vec3[nx * ny];
