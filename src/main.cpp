@@ -14,7 +14,7 @@
 using namespace std;
 
 
-void worker(bool* kill, int tc, int id, int nx, int ny, int ns, vector<vec3>* sum_pixels, unsigned int* pixels, hitable* world, camera* cam);
+void worker(bool* kill, int tc, int id, int nx, int ny, int ns, vector<vec3>* samples, unsigned int* pixels, hitable* world, camera* cam);
 
 
 void show_window(int w, int h, unsigned int *pixels)
@@ -78,8 +78,8 @@ int main()
     int ns = 1000;
     
     unsigned int *pixels = new unsigned int[nx * ny];
-    vector<vec3> sum_pixels;
-    sum_pixels.resize(nx * ny);
+    vector<vec3> samples;
+    samples.resize(nx * ny);
     
     hitable* list[4];
     
@@ -97,7 +97,7 @@ int main()
     threadCount = thread::hardware_concurrency(); // Enable Multithreading
     thread* threads = new thread[threadCount];
     for (int id=0; id<threadCount; id++)
-        threads[id] = thread(worker, &kill, threadCount, id, nx, ny, ns, &sum_pixels, pixels, world, cam);
+        threads[id] = thread(worker, &kill, threadCount, id, nx, ny, ns, &samples, pixels, world, cam);
 
     // Wait until the window is closed
     show_window(nx, ny, pixels);
@@ -111,7 +111,7 @@ int main()
 }
 
 
-void worker(bool* kill, int tc, int id, int nx, int ny, int ns, vector<vec3>* sum_pixels, unsigned int* pixels, hitable* world, camera* cam)
+void worker(bool* kill, int tc, int id, int nx, int ny, int ns, vector<vec3>* samples, unsigned int* pixels, hitable* world, camera* cam)
 {
     int ny1 = ny / tc * (++id);
     int ny2 = ny1 - (ny / tc);
@@ -132,11 +132,12 @@ void worker(bool* kill, int tc, int id, int nx, int ny, int ns, vector<vec3>* su
 
                 ray r = cam->get_ray(u, v);
                 vec3 col = color(r, world, 0);
-                sum_pixels->at(idx) += col;
+                samples->at(idx) += col;
                 
                 if (s > 0)
-                    col = sum_pixels->at(idx) / (s+1);
+                    col = samples->at(idx) / (s+1);
                 
+                // Approximte sRGB
                 col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
 
                 // Converting to integers
