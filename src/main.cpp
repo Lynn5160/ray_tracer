@@ -77,10 +77,10 @@ int main()
     int ny = 512;
     int ns = 1000;
     
-    unsigned int *pixels = new unsigned int[nx * ny];
     vector<vec3> samples;
     samples.resize(nx * ny);
-    
+    unsigned int *pixels = new unsigned int[nx * ny];
+
     hitable* list[4];
     
     list[0] = new sphere(vec3(0, 0, -1), 0.5,  new lambertian(vec3(0.8, 0.3, 0.3)));
