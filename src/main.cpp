@@ -1,7 +1,4 @@
-#include <thread>
 #include <SDL2/SDL.h>
-
-using namespace std;
 
 void show_window(int w, int h, unsigned int *pixels)
 {
@@ -24,7 +21,7 @@ void show_window(int w, int h, unsigned int *pixels)
         SDL_UpdateTexture(img, NULL, pixels, pitch);
         SDL_RenderCopy(renderer, img, NULL, NULL);
         SDL_RenderPresent(renderer);
-        this_thread::sleep_for(chrono::milliseconds(20));
+        SDL_Delay(100);
     }
     
     // free all resources
