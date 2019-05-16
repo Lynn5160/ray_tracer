@@ -42,9 +42,9 @@ int main()
     {
         for (int i=0; i < width; i++)
         {
-            float r = float(i) / float(width);
-            float g = float(j) / float(width);
-            float b = 0.0;
+            float r = 1.0;
+            float g = 1.0;
+            float b = 1.0;
             
             // Converting to integers
             int ir = int(255.99 * r);
