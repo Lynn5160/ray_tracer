@@ -116,7 +116,6 @@ void worker(bool* kill, int tc, int id, int width, int height, int sampling, vec
     int h_max = height / tc * id;
     int h_min = h_max - (height / tc);
     
-    int x = time(NULL);
     for (int s = 1; s < sampling; s++)
     {
         for (int j = h_max-1; j >= h_min; j--)
@@ -128,8 +127,8 @@ void worker(bool* kill, int tc, int id, int width, int height, int sampling, vec
                 
                 idx = width * (height-j-1) + i;
 
-                u = float(i + 1.0 - (drand48() + (h_min/height))) / float(width);
-                v = float(j + 1.0 - (drand48() + (h_min/height))) / float(height);
+                u = float(i + drand48()) / float(width);
+                v = float(j + drand48()) / float(height);
 
                 ray r = cam->get_ray(u, v);
                 
@@ -146,5 +145,4 @@ void worker(bool* kill, int tc, int id, int width, int height, int sampling, vec
             }
         }
     }
-    cout << time(NULL) - x  << endl;
 }
