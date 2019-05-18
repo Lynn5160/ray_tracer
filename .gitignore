@@ -41,3 +41,14 @@ src/.DS_Store
 .vscode/ipch/c1302a157a74212b/material.ipch
 .vscode/ipch/c1302a157a74212b/mmap_address.bin
 .vscode/settings.json
+cmake/CMakeFiles/ray_tracer.dir/link.txt
+bin/ray_tracer
+cmake/CMakeFiles/ray_tracer.dir/CXX.includecache
+cmake/CMakeFiles/ray_tracer.dir/DependInfo.cmake
+cmake/CMakeFiles/ray_tracer.dir/build.make
+cmake/CMakeFiles/ray_tracer.dir/cmake_clean.cmake
+cmake/CMakeFiles/ray_tracer.dir/depend.internal
+cmake/CMakeFiles/ray_tracer.dir/depend.make
+cmake/CMakeFiles/ray_tracer.dir/flags.make
+cmake/CMakeFiles/ray_tracer.dir/progress.make
+cmake/CMakeFiles/ray_tracer.dir/src/main.cpp.o
