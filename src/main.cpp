@@ -73,7 +73,7 @@ int main()
 {
     int width = 1024;
     int height = 512;
-    int sampling = 999;
+    int sampling = 100;
     
     vec3* samples = new vec3[width * height];
     unsigned int* pixels = new unsigned int[width * height];
@@ -81,9 +81,9 @@ int main()
     hitable* list[4];
     
     list[0] = new sphere(vec3(0, 0, -1), 0.5,  new lambertian(vec3(0.8, 0.8, 0.8)));
-    list[1] = new sphere(vec3(0, -100.5, -1), 100, new lambertian(vec3(0.8, 0.8, 0.0)));
-    list[2] = new sphere(vec3(1, 0, -1), 0.5, new metal(vec3(0.8, 0.8, 0.8), 0.2));
-    list[3] = new sphere(vec3(-1, 0, -1), 0.5, new dielectric(1.52));
+    list[1] = new sphere(vec3(0, -100.5, -1), 100, new lambertian(vec3(0.0, 0.5, 0.0)));
+    list[2] = new sphere(vec3(1, 0, -1), 0.5, new metal(vec3(0.8, 0.6, 0.2), 0.35));
+    list[3] = new sphere(vec3(-1, 0, -1), 0.5, new metal(vec3(0.8, 0.8, 0.8), 0));
     
     hitable* world = new hitable_list(list, 4);
     camera* cam = new camera();
