@@ -1,8 +1,7 @@
 #include <thread>
 #include <random>
 
-#include <SDL2/SDL.h>
-
+#include "window.h"
 #include "ray.h"
 #include "sphere.h"
 #include "hitable_list.h"
@@ -11,40 +10,6 @@
 
 
 using namespace std;
-
-
-void worker(bool* kill, int tc, int id, int width, int height, int sampling, vec3* samples, unsigned int* pixels, hitable* world, camera* cam);
-
-void show_window(int w, int h, unsigned int *pixels)
-{
-    // Initialize SDL.
-    if (SDL_Init(SDL_INIT_VIDEO) < 0)
-        return ;
-    
-    SDL_Window* win = SDL_CreateWindow("Ray Tracing", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_ALLOW_HIGHDPI);
-    SDL_Renderer* renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
-    SDL_Texture* img = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, w, h);
-    
-    int pitch = w * sizeof(unsigned int);
-    SDL_Event event;
-    while (true)
-    {
-        if (SDL_PollEvent(&event))
-            if (SDL_QUIT == event.type)
-                break;
-        
-        SDL_UpdateTexture(img, NULL, pixels, pitch);
-        SDL_RenderCopy(renderer, img, NULL, NULL);
-        SDL_RenderPresent(renderer);
-        SDL_Delay(100);
-    }
-    
-    // free all resources
-    SDL_DestroyTexture(img);
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(win);
-    SDL_Quit();
-}
 
 
 vec3 color(const ray& r, hitable* world, int depth)
@@ -65,6 +30,47 @@ vec3 color(const ray& r, hitable* world, int depth)
         vec3 unit_direction = unit_vector(r.direction());
         float t = 0.5 * (unit_direction.y() + 1.0);
         return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+    }
+}
+
+
+void worker(bool* kill, int tc, int id, int width, int height, int sampling, vec3* samples, unsigned int* pixels, hitable* world, camera* cam)
+{
+    vec3 col;
+    float u, v;
+    int idx, ir, ig, ib;
+
+    int h_max = height / tc * id;
+    int h_min = h_max - (height / tc);
+    
+    for (int s = 1; s < sampling; s++)
+    {
+        for (int j = h_max-1; j >= h_min; j--)
+        {
+            for (int i = 0; i < width; i++)
+            {
+                if (*kill)
+                    return;
+                
+                idx = width * (height-j-1) + i;
+
+                u = float(i + drand48()) / float(width);
+                v = float(j + drand48()) / float(height);
+
+                ray r = cam->get_ray(u, v);
+                
+                samples[idx] += color(r, world, 0);
+
+                col = samples[idx] / s;
+
+                // Apperoximate sRGB and convert to integers
+                ir = int(255.99 * sqrt(col[0]));
+                ig = int(255.99 * sqrt(col[1]));
+                ib = int(255.99 * sqrt(col[2]));
+
+                pixels[idx] = (ir << 16) + (ig << 8) + ib;
+            }
+        }
     }
 }
 
@@ -105,44 +111,4 @@ int main()
         threads[id].join();
     
     return EXIT_SUCCESS;
-}
-
-void worker(bool* kill, int tc, int id, int width, int height, int sampling, vec3* samples, unsigned int* pixels, hitable* world, camera* cam)
-{
-    vec3 col;
-    float u, v;
-    int idx, ir, ig, ib;
-
-    int h_max = height / tc * id;
-    int h_min = h_max - (height / tc);
-    
-    for (int s = 1; s < sampling; s++)
-    {
-        for (int j = h_max-1; j >= h_min; j--)
-        {
-            for (int i = 0; i < width; i++)
-            {
-                if (*kill)
-                    return;
-                
-                idx = width * (height-j-1) + i;
-
-                u = float(i + drand48()) / float(width);
-                v = float(j + drand48()) / float(height);
-
-                ray r = cam->get_ray(u, v);
-                
-                samples[idx] += color(r, world, 0);
-
-                col = samples[idx] / s;
-
-                // Apperoximate sRGB and convert to integers
-                ir = int(255.99 * sqrt(col[0]));
-                ig = int(255.99 * sqrt(col[1]));
-                ib = int(255.99 * sqrt(col[2]));
-
-                pixels[idx] = (ir << 16) + (ig << 8) + ib;
-            }
-        }
-    }
 }
