@@ -1,5 +1,5 @@
-#include <mutex>
 #include <thread>
+#include <random>
 
 #include <SDL2/SDL.h>
 
@@ -13,8 +13,7 @@
 using namespace std;
 
 
-void worker(bool* kill, int tc, int id, int nx, int ny, int ns, vec3* samples, unsigned int* pixels, hitable* world, camera* cam);
-
+void worker(bool* kill, int tc, int id, int width, int height, int sampling, vec3* samples, unsigned int* pixels, hitable* world, camera* cam);
 
 void show_window(int w, int h, unsigned int *pixels)
 {
@@ -22,7 +21,7 @@ void show_window(int w, int h, unsigned int *pixels)
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
         return ;
     
-    SDL_Window* win = SDL_CreateWindow("pRat", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_ALLOW_HIGHDPI);
+    SDL_Window* win = SDL_CreateWindow("Ray Tracing", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_ALLOW_HIGHDPI);
     SDL_Renderer* renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
     SDL_Texture* img = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, w, h);
     
@@ -37,7 +36,7 @@ void show_window(int w, int h, unsigned int *pixels)
         SDL_UpdateTexture(img, NULL, pixels, pitch);
         SDL_RenderCopy(renderer, img, NULL, NULL);
         SDL_RenderPresent(renderer);
-        SDL_Delay(20);
+        SDL_Delay(100);
     }
     
     // free all resources
@@ -72,33 +71,33 @@ vec3 color(const ray& r, hitable* world, int depth)
 
 int main()
 {
-    int nx = 1024;
-    int ny = 512;
-    int ns = 1000;
+    int width = 1024;
+    int height = 512;
+    int sampling = 999;
     
-    vec3* samples = new vec3[nx * ny];
-    unsigned int* pixels = new unsigned int[nx * ny];
+    vec3* samples = new vec3[width * height];
+    unsigned int* pixels = new unsigned int[width * height];
 
     hitable* list[4];
     
     list[0] = new sphere(vec3(0, 0, -1), 0.5,  new lambertian(vec3(0.8, 0.8, 0.8)));
     list[1] = new sphere(vec3(0, -100.5, -1), 100, new lambertian(vec3(0.0, 0.5, 0.0)));
-    list[2] = new sphere(vec3(1, 0, -1), 0.5, new metal(vec3(0.8, 0.6, 0.2), 0.35));
-    list[3] = new sphere(vec3(-1, 0, -1), 0.5, new metal(vec3(0.8, 0.8, 0.8), 0));
+    list[2] = new sphere(vec3(1, 0, -1), 0.5, new metal(vec3(0.8, 0.6, 0.2), 0.2));
+    list[3] = new sphere(vec3(-1, 0, -1), 0.5, new dielectric(1.52));
     
     hitable* world = new hitable_list(list, 4);
     camera* cam = new camera();
     
     // Spawning threads
     bool kill = false;
-    int threadCount = 1;
+    int threadCount = 16;
     threadCount = thread::hardware_concurrency(); // Enable Multithreading
     thread* threads = new thread[threadCount];
     for (int id=0; id<threadCount; id++)
-        threads[id] = thread(worker, &kill, threadCount, id+1, nx, ny, ns, samples, pixels, world, cam);
+        threads[id] = thread(worker, &kill, threadCount, id+1, width, height, sampling, samples, pixels, world, cam);
 
     // Wait until the window is closed
-    show_window(nx, ny, pixels);
+    show_window(width, height, pixels);
     
     // Terminate threads
     kill = true;
@@ -108,29 +107,28 @@ int main()
     return EXIT_SUCCESS;
 }
 
-
-void worker(bool* kill, int tc, int id, int nx, int ny, int ns, vec3* samples, unsigned int* pixels, hitable* world, camera* cam)
+void worker(bool* kill, int tc, int id, int width, int height, int sampling, vec3* samples, unsigned int* pixels, hitable* world, camera* cam)
 {
     vec3 col;
     float u, v;
     int idx, ir, ig, ib;
 
-    int ny_max = ny / tc * id;
-    int ny_min = ny_max - (ny / tc);
+    int h_max = height / tc * id;
+    int h_min = h_max - (height / tc);
     
-    for (int s = 1; s < ns; s++)
+    for (int s = 1; s < sampling; s++)
     {
-        for (int j = ny_max-1; j >= ny_min; j--)
+        for (int j = h_max-1; j >= h_min; j--)
         {
-            for (int i = 0; i < nx; i++)
+            for (int i = 0; i < width; i++)
             {
                 if (*kill)
                     return;
                 
-                idx = nx * (ny-j-1) + i;
-                
-                u = float(i + drand48()) / float(nx);
-                v = float(j + drand48()) / float(ny);
+                idx = width * (height-j-1) + i;
+
+                u = float(i + drand48()) / float(width);
+                v = float(j + drand48()) / float(height);
 
                 ray r = cam->get_ray(u, v);
                 
@@ -143,7 +141,6 @@ void worker(bool* kill, int tc, int id, int nx, int ny, int ns, vec3* samples, u
                 ig = int(255.99 * sqrt(col[1]));
                 ib = int(255.99 * sqrt(col[2]));
 
-                lock_guard<mutex> lock(mutex);
                 pixels[idx] = (ir << 16) + (ig << 8) + ib;
             }
         }
