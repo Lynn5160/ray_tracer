@@ -92,7 +92,14 @@ int main()
     list[3] = new sphere(vec3(-1, 0, -1), 0.5, new dielectric(1.52));
     
     hitable* world = new hitable_list(list, 4);
-    camera* cam = new camera();
+
+    vec3 lookfrom(-1, 0.5, 1);
+    vec3 lookat(0, 0, -1);
+    float dist_to_focus = 2.29;
+    float aperture = 0.5;
+    float vfov = 50.0;
+
+    camera* cam = new camera(lookfrom, lookat, vec3(0,1,0), vfov, float(width)/float(height), aperture, dist_to_focus);
     
     // Spawning threads
     bool kill = false;
