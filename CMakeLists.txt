@@ -16,17 +16,17 @@ include_directories(
 
 #=====
 # Build
-add_executable( pRat
+add_executable( ray_tracer
   ${CMAKE_SOURCE_DIR}/src/main.cpp
   )
 
 link_directories( /opt/local/lib )
 
-set_target_properties( pRat
+set_target_properties( ray_tracer
   PROPERTIES 
   LINKER_LANGUAGE CXX
   PREFIX ""
-  OUTPUT_NAME "../bin/pRat"
+  OUTPUT_NAME "../bin/ray_tracer"
   )
 
-target_link_libraries( pRat ${SDL2_LIBRARIES} ${PLATFORM_LIBS})
+target_link_libraries( ray_tracer ${SDL2_LIBRARIES} ${PLATFORM_LIBS})
