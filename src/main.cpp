@@ -79,7 +79,7 @@ int main()
 {
     int width = 1024;
     int height = 512;
-    int sampling = 999;
+    int sampling = 1000;
     
     vec3* samples = new vec3[width * height];
     unsigned int* pixels = new unsigned int[width * height];
@@ -106,8 +106,8 @@ int main()
     int threadCount = 16;
     threadCount = thread::hardware_concurrency(); // Enable Multithreading
     thread* threads = new thread[threadCount];
-    for (int id=0; id<threadCount; id++)
-        threads[id] = thread(worker, &kill, threadCount, id+1, width, height, sampling, samples, pixels, world, cam);
+    for (int id=1; id<=threadCount; id++)
+        threads[id] = thread(worker, &kill, threadCount, id, width, height, sampling, samples, pixels, world, cam);
 
     // Wait until the window is closed
     show_window(width, height, pixels);
