@@ -95,8 +95,7 @@ int main()
 
     vec3 lookfrom(-1, 0.5, 1);
     vec3 lookat(0, 0, -1);
-    // float dist_to_focus = 2.17;
-    float dist_to_focus = 2.55;
+    float dist_to_focus = 2.17;
     float aperture = 0.5;
     float vfov = 50.0;
 
