@@ -4,9 +4,9 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "pRat",
+            "label": "ray_tracer",
             "type": "shell",
-            "command": "cd cmake && cmake .. && make && ../bin/pRat",
+            "command": "cd cmake && cmake .. && make && ../bin/ray_tracer",
             "group": {
                 "kind": "build",
                 "isDefault": true
