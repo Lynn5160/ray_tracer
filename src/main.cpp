@@ -1,5 +1,7 @@
 #include "window.h"
 
+
+int main()
 {
     int width = 512;
     int height = 512;
