@@ -9,7 +9,7 @@ bool hit_sphere(const vec3 center, float radius, const ray& r)
     vec3 oc = r.origin() - center;
     float a = dot(r.direction(), r.direction());
     float b = 2.0 * dot(oc, r.direction());
-    float c = dot(oc, oc) - radius*radius;
+    float c = dot(oc, oc) - radius * radius;
     float discriminant = b * b - 4 * a * c;
     return (discriminant > 0);
 }
@@ -43,7 +43,9 @@ int main()
             float u = float(i) / float(nx);
             float v = float(j) / float(ny);
             
-            ray ray(origin, lower_left_corner + (u * horizontal) + (v * vertical));
+            vec3 direction = unit_vector(lower_left_corner + (u * horizontal) + (v * vertical));
+
+            ray ray(origin, direction);
             vec3 col = color(ray);
             
             // Converting to integers
