@@ -32,8 +32,8 @@ int main()
             
             vec3 direction = unit_vector(lower_left_corner + (u * horizontal) + (v * vertical));
 
-            ray ray(origin, direction);
-            vec3 col = color(ray);
+            ray r(origin, direction);
+            vec3 col = color(r);
             
             // Converting to integers
             int ir = int(255.99 * col[0]);
