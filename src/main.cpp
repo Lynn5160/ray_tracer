@@ -1,6 +1,3 @@
-#include <thread>
-#include <SDL2/SDL.h>
-
 #include "window.h"
 #include "vec3.h"
 
