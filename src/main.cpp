@@ -30,7 +30,9 @@ int main()
             float u = float(i) / float(nx);
             float v = float(j) / float(ny);
             
-            ray ray(origin, lower_left_corner + (u * horizontal) + (v * vertical));
+            vec3 direction = unit_vector(lower_left_corner + (u * horizontal) + (v * vertical));
+
+            ray ray(origin, direction);
             vec3 col = color(ray);
             
             // Converting to integers
