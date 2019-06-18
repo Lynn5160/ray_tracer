@@ -22,7 +22,7 @@ vec3 color(const ray& r)
     float t  = hit_sphere(vec3(0, 0, -1), 0.5, r);
     if (t > 0.0)
     {
-        vec3 N = unit_vector(r.point_at_parameter(t) - vec3(0, 0, -1));
+        vec3 N = (r.point_at_parameter(t) - vec3(0, 0, -1)) / 0.5;
         return 0.5 * vec3(N.x() + 1, N.y() + 1, N.z() + 1);
     }
     
