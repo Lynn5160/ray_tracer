@@ -10,8 +10,6 @@
 
 using namespace std;
 
-
-
 vec3 color(const ray& r, hitable* world)
 {
     hit_record rec;
