@@ -37,40 +37,40 @@ vec3 color(const ray& r, hitable* world)
     }
 }
 
-void worker(bool* kill, int tc, int id, int nx, int ny, int ns, vector<vec3>* sum_pixels, unsigned int* pixels, hitable* world, camera* cam)
+void worker(bool* kill, int tc, int id, int width, int height, int sampling, vec3* samples, unsigned int* pixels, hitable* world, camera* cam)
 {
-    int ny1 = ny / tc * (++id);
-    int ny2 = ny1 - (ny / tc);
+    vec3 col;
+    float u, v;
+    int idx, ir, ig, ib;
+
+    int h_max = height / tc * id;
+    int h_min = h_max - (height / tc);
     
-    for (int s=0; s < ns; s++)
+    for (int s = 1; s < sampling; s++)
     {
-        for (int j = ny1-1; j >= ny2; j--)
+        for (int j = h_max-1; j >= h_min; j--)
         {
-            for (int i=0; i < nx; i++)
+            for (int i = 0; i < width; i++)
             {
                 if (*kill)
                     return;
                 
-                int idx = nx * (ny-j-1) + i;
-                
-                float u = float(i + drand48()) / float(nx);
-                float v = float(j + drand48()) / float(ny);
+                idx = width * (height-j-1) + i;
+
+                u = float(i + drand48()) / float(width);
+                v = float(j + drand48()) / float(height);
 
                 ray r = cam->get_ray(u, v);
-                vec3 col = color(r, world);
-                sum_pixels->at(idx) += col;
                 
-                if (s > 0)
-                    col = sum_pixels->at(idx) / (s+1);
-                
-                col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
+                samples[idx] += color(r, world);
 
-                // Converting to integers
-                int ir = int(255.99 * col[0]);
-                int ig = int(255.99 * col[1]);
-                int ib = int(255.99 * col[2]);
+                col = samples[idx] / s;
 
-                lock_guard<mutex> lock(mutex);
+                // Approximate sRGB and convert to integers
+                ir = int(255.99 * sqrt(col[0]));
+                ig = int(255.99 * sqrt(col[1]));
+                ib = int(255.99 * sqrt(col[2]));
+
                 pixels[idx] = (ir << 16) + (ig << 8) + ib;
             }
         }
@@ -79,13 +79,12 @@ void worker(bool* kill, int tc, int id, int nx, int ny, int ns, vector<vec3>* su
 
 int main()
 {
-    int nx = 1024;
-    int ny = 512;
-    int ns = 200;
+    int width = 1024;
+    int height = 512;
+    int sampling = 1000;
     
-    unsigned int *pixels = new unsigned int[nx*ny];
-    vector<vec3> sum_pixels;
-    sum_pixels.resize(nx*ny);
+    vec3* samples = new vec3[width * height];
+    unsigned int* pixels = new unsigned int[width * height];
     
     hitable* list[2];
     
@@ -100,11 +99,11 @@ int main()
     int threadCount = 1;
     threadCount = thread::hardware_concurrency(); // Enable Multithreading
     thread* threads = new thread[threadCount];
-    for (int id=0; id<threadCount; id++)
-        threads[id] = thread(worker, &kill, threadCount, id, nx, ny, ns, &sum_pixels, pixels, world, cam);
+    for (int id=1; id<=threadCount; id++)
+        threads[id] = thread(worker, &kill, threadCount, id, width, height, sampling, samples, pixels, world, cam);
 
     // Wait until the window is closed
-    show_window(nx, ny, pixels);
+    show_window(width, height, pixels);
     
     // Terminate threads
     kill = true;
