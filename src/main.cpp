@@ -1,5 +1,5 @@
 #include <thread>
-#include <vector>
+
 #include "window.h"
 #include "vec3.h"
 #include "ray.h"
