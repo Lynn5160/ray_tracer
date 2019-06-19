@@ -53,7 +53,6 @@ void worker(bool* kill, int tc, int id, int nx, int ny, int ns, unsigned int* pi
             int ib = int(255.99 * col[2]);
 
             int idx = nx * (ny-j-1) + i;
-            lock_guard<mutex> lock(mutex);
             pixels[idx] = (ir << 16) + (ig << 8) + ib;
         }
     }
