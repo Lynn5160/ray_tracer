@@ -16,7 +16,8 @@ public:
     
     ray get_ray(float u, float v)
     {
-        return ray(origin, lower_left_corner + u*horizontal + v*vertical - origin);
+        vec3 direction = unit_vector(lower_left_corner + u*horizontal + v*vertical - origin);
+        return ray(origin, direction);
     }
     
     vec3 origin;
