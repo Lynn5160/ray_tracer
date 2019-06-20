@@ -17,8 +17,7 @@ vec3 color(const ray& r, hitable* world)
         return 0.5 * vec3(rec.normal.x() + 1, rec.normal.y() + 1, rec.normal.z() + 1);
     else
     {
-        vec3 unit_direction = unit_vector(r.direction());
-        float t = 0.5 * (unit_direction.y() + 1.0);
+        float t = 0.5 * (r.direction().y() + 1.0);
         return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
     }
 }
