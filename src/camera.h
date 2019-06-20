@@ -45,7 +45,8 @@ class camera
         {
             vec3 rd = lens_radius * random_in_unit_disc();
             vec3 offset = u * rd.x() + v * rd.y();
-            ray cam_ray = ray(origin + offset, lower_left_corner + s*horizontal + t*vertical - origin - offset);
+            vec3 direction = unit_vector(lower_left_corner + s*horizontal + t*vertical - origin - offset);
+            ray cam_ray = ray(origin + offset, direction);
             return cam_ray;
         }
 
