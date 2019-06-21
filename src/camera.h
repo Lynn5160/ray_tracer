@@ -1,5 +1,6 @@
 #ifndef CAMERAH
 #define CAMERAH
+
 #include "ray.h"
 
 vec3 random_in_unit_disc()
@@ -22,12 +23,8 @@ class camera
                vec3 vup, float vfov,
                          float aspect,
                          float aperture,
-                         float focus_dist,
-                         float t0,
-                         float t1)
+                         float focus_dist)
         {
-            time0 = t0;
-            time1 = t1;
             lens_radius = aperture / 2;
             
             float theta = vfov * M_PI / 180;
@@ -48,8 +45,8 @@ class camera
         {
             vec3 rd = lens_radius * random_in_unit_disc();
             vec3 offset = u * rd.x() + v * rd.y();
-            float time = time0 + drand48()*(time1 - time0);
-            ray cam_ray = ray(origin + offset, lower_left_corner + s*horizontal + t*vertical - origin - offset, time);
+            vec3 direction = unit_vector(lower_left_corner + s*horizontal + t*vertical - origin - offset);
+            ray cam_ray = ray(origin + offset, direction);
             return cam_ray;
         }
 
@@ -59,9 +56,5 @@ class camera
         vec3 vertical;
         vec3 u, v, w;
         float lens_radius;
-        float time0, time1;
 };
 #endif
-
-
-

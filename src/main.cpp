@@ -1,195 +1,147 @@
-#include <mutex>
 #include <thread>
-#include <vector>
 
-#include <SDL2/SDL.h>
-
-#include "log.h"
+#include "window.h"
+#include "ray.h"
 #include "sphere.h"
-#include "moving_sphere.h"
 #include "hitable_list.h"
-#include "float.h"
 #include "camera.h"
 #include "material.h"
-#include "bvh.h"
-#include "aarect.h"
-#include "box.h"
-#include "constant_medium.h"
-#include "surface_texture.h"
 
 using namespace std;
 
-void worker(bool* kill, int tc, int id, int nx, int ny, int ns, vector<vec3>* sum_pixels, unsigned int* pixels, hitable* world, camera* cam);
-
-vec3 color(const ray& r, hitable *world, int depth)
+vec3 color(const ray& r, hitable* world, int depth)
 {
     hit_record rec;
-    if (world->hit(r, 0.001, FLT_MAX, rec)) 
+    if (world->hit(r, 0.001, MAXFLOAT, rec))
     {
         ray scattered;
         vec3 attenuation;
-        vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
-        float pdf;
-        vec3 albedo;
-
-//        if (depth > 1) logRay(r, rec.t); // Plot Rays
         
-        if (depth < 3 && rec.mat_ptr->scatter(r, rec, albedo, scattered, pdf))
-        {
-            vec3 on_light = vec3(213 + drand48() * (243-213), 554, 227 + drand48() * (332-227));
-            vec3 to_light = on_light - rec.p;
-            float distance_squared = to_light.squared_length();
-            to_light.make_unit_vector();
-            
-            if (dot(to_light, rec.normal) < 0)
-                return emitted;
-            
-            float light_area = (343-213) * (332-227);
-            float light_cosine = fabs(to_light.y());
-            
-            if (light_cosine < 0.000001)
-                return emitted;
-            
-            pdf = distance_squared / (light_cosine * light_area);
-            scattered  = ray(rec.p, to_light, r.time());
-
-            return emitted + albedo * rec.mat_ptr->scattering_pdf(r, rec, scattered) * color(scattered, world, depth+1) / pdf;
-        }
+        if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered))
+            return attenuation * color(scattered, world, depth + 1);
         else
-            return emitted;
+            return vec3(0, 0, 0);
     }
     else
-        return vec3(0,0,0);
-}
-
-
-hitable *cornell_box()
-{
-    hitable **list = new hitable*[9];
-    int i = 0;
-    material *red = new lambertian( new constant_texture(vec3(0.65, 0.05, 0.05)) );
-    material *white = new lambertian( new constant_texture(vec3(0.73, 0.73, 0.73)) );
-    material *green = new lambertian( new constant_texture(vec3(0.12, 0.45, 0.15)) );
-    material *light = new diffuse_light( new constant_texture(vec3(15, 15, 15)) );
-    list[i++] = new flip_normals(new yz_rect(0, 555, 0, 555, 555, green));
-    list[i++] = new yz_rect(0, 555, 0, 555, 0, red);
-    list[i++] = new xz_rect(213, 343, 227, 332, 554, light);
-    list[i++] = new flip_normals(new xz_rect(0, 555, 0, 555, 555, white));
-    list[i++] = new xz_rect(0, 555, 0, 555, 0, white);
-    list[i++] = new flip_normals(new xy_rect(0, 555, 0, 555, 555, white));
-    list[i++] = new translate(new rotate_y(new box(vec3(0, 0, 0), vec3(165, 165, 165), white), -18), vec3(130,0,65));
-    list[i++] = new translate(new rotate_y(new box(vec3(0, 0, 0), vec3(165, 330, 165), white),  15), vec3(265,0,295));
-    list[i++] = new sphere(vec3(200, 250, 200), 50, white);
-    return new hitable_list(list, i);
-}
-
-void show_window(int w, int h, unsigned int *pixels)
-{
-    // Initialize SDL.
-    if (SDL_Init(SDL_INIT_VIDEO) < 0)
-        return ;
-    
-    SDL_Window* win = SDL_CreateWindow("pRat", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_ALLOW_HIGHDPI);
-    SDL_Renderer* renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
-    SDL_Texture* img = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, w, h);
-    
-    int pitch = w * sizeof(unsigned int);
-    SDL_Event event;
-    while (true)
     {
-        if (SDL_PollEvent(&event))
-            if (SDL_QUIT == event.type)
-                break;
-        
-        SDL_UpdateTexture(img, NULL, pixels, pitch);
-        SDL_RenderCopy(renderer, img, NULL, NULL);
-        SDL_RenderPresent(renderer);
-        this_thread::sleep_for(chrono::milliseconds(20));
+        float t = 0.5 * (r.direction().y() + 1.0);
+        return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
     }
-    
-    // free all resources
-    SDL_DestroyTexture(img);
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(win);
-    SDL_Quit();
 }
 
-int main()
+void worker(bool* kill, int tc, int id, int width, int height, int sampling, vec3* samples, unsigned int* pixels, hitable* world, camera* cam)
 {
-    // Cornell Box
-    hitable* world = cornell_box();
-    vec3 lookfrom(278, 278, -800);
-    vec3 lookat(278,278,0);
+    vec3 col;
+    float u, v;
+    int idx, ir, ig, ib;
 
-    int nx = 512;
-    int ny = 512;
-    int ns = 100;
+    int h_max = height / tc * id;
+    int h_min = h_max - (height / tc);
     
-    float dist_to_focus = 10.0;
-    float aperture = 0;
-    float vfov = 40.0;
-    
-    unsigned int *pixels = new unsigned int[nx*ny];
-    vector<vec3> sum_pixels;
-    sum_pixels.resize(nx*ny);
-    camera* cam = new camera(lookfrom, lookat, vec3(0,1,0), vfov, float(nx)/float(ny), aperture, dist_to_focus, 0.0, 1.0);
-    
-    // Spawning threads
-    bool kill_thread = false;
-    int threadCount = 1;
-    threadCount = thread::hardware_concurrency(); // Enable Multithreading
-    thread* threads = new thread[threadCount];
-    for (int id=0; id<threadCount; id++)
-        threads[id] = thread(worker, &kill_thread, threadCount, id, nx, ny, ns, &sum_pixels, pixels, world, cam);
-    
-    // Wait until the window is closed
-    show_window(nx, ny, pixels);
-    
-    // Terminate threads
-    kill_thread = true;
-    for (int id=0; id<threadCount; id++)
-        threads[id].join();
-    
-    return EXIT_SUCCESS;
-}
-
-void worker(bool* kill, int tc, int id, int nx, int ny, int ns, vector<vec3>* sum_pixels, unsigned int* pixels, hitable* world, camera* cam)
-{
-    int ny1 = ny / tc * (++id);
-    int ny2 = ny1 - (ny / tc);
-
-    for (int s=0; s < ns; s++)
+    for (int s = 1; s < sampling; s++)
     {
-        for (int j = ny1-1; j >= ny2; j--)
+        for (int j = h_max-1; j >= h_min; j--)
         {
-            for (int i=0; i < nx; i++)
+            for (int i = 0; i < width; i++)
             {
                 if (*kill)
                     return;
                 
-                int idx = nx * (ny-j-1) + i;
-                
-                float u = float(i + drand48()) / float(nx);
-                float v = float(j + drand48()) / float(ny);
-                ray r = cam->get_ray(u, v);
-                vec3 col = color(r, world, 0);
-                sum_pixels->at(idx) += col;
+                idx = width * (height-j-1) + i;
 
-                if (s > 0)
-                    col = sum_pixels->at(idx) / (s+1);
-            
-                col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
+                u = float(i + drand48()) / float(width);
+                v = float(j + drand48()) / float(height);
+
+                ray r = cam->get_ray(u, v);
                 
-                // Converting to integers
-                int ir = int(255.99*col[0]);
-                int ig = int(255.99*col[1]);
-                int ib = int(255.99*col[2]);
-                
-                lock_guard<mutex> lock(mutex);
+                samples[idx] += color(r, world, 0);
+
+                col = samples[idx] / s;
+
+                // Approximate sRGB and convert to integers
+                ir = int(255.99 * sqrt(col[0]));
+                ig = int(255.99 * sqrt(col[1]));
+                ib = int(255.99 * sqrt(col[2]));
+
                 pixels[idx] = (ir << 16) + (ig << 8) + ib;
             }
         }
     }
 }
 
+hitable *random_scene() {
+    int n = 500;
+    hitable **list = new hitable*[n+1];
+    list[0] =  new sphere(vec3(0,-1000,0), 1000, new diffuse(vec3(0.5, 0.5, 0.5)));
+    int i = 1;
+    for (int a = -11; a < 11; a++) {
+        for (int b = -11; b < 11; b++) {
+            float choose_mat = drand48();
+            vec3 center(a+0.9*drand48(),0.2,b+0.9*drand48()); 
+            if ((center-vec3(4,0.2,0)).length() > 0.9) { 
+                if (choose_mat < 0.8) {  // diffuse
+                    list[i++] = new sphere(center, 0.2, new diffuse(vec3(drand48()*drand48(), drand48()*drand48(), drand48()*drand48())));
+                }
+                else if (choose_mat < 0.95) { // metal
+                    list[i++] = new sphere(center, 0.2,
+                            new metal(vec3(0.5*(1 + drand48()), 0.5*(1 + drand48()), 0.5*(1 + drand48())),  0.5*drand48()));
+                }
+                else {  // glass
+                    list[i++] = new sphere(center, 0.2, new dielectric(1.5));
+                }
+            }
+        }
+    }
 
+    list[i++] = new sphere(vec3(0, 1, 0), 1.0, new dielectric(1.5));
+    list[i++] = new sphere(vec3(-4, 1, 0), 1.0, new diffuse(vec3(0.4, 0.2, 0.1)));
+    list[i++] = new sphere(vec3(4, 1, 0), 1.0, new metal(vec3(0.7, 0.6, 0.5), 0.0));
+
+    return new hitable_list(list,i);
+}
+
+int main()
+{
+    int width = 1024;
+    int height = 512;
+    int sampling = 1000;
+    
+    vec3* samples = new vec3[width * height];
+    unsigned int* pixels = new unsigned int[width * height];
+
+    hitable* list[4];
+    
+    list[0] = new sphere(vec3(0, 0, -1), 0.5,  new diffuse(vec3(0.8, 0.8, 0.8)));
+    list[1] = new sphere(vec3(0, -100.5, -1), 100, new diffuse(vec3(0.0, 0.5, 0.0)));
+    list[2] = new sphere(vec3(1, 0, -1), 0.5, new metal(vec3(0.8, 0.6, 0.2), 0.2));
+    list[3] = new sphere(vec3(-1, 0, -1), 0.5, new dielectric(1.52));
+    
+    hitable* world = new hitable_list(list, 4);
+    world = random_scene();
+
+    vec3 lookfrom(13,2,3);
+    vec3 lookat(0,0,0);
+    float dist_to_focus = 10.0;
+    float aperture = 0.1;
+    float vfov = 20.0;
+
+    camera* cam = new camera(lookfrom, lookat, vec3(0,1,0), vfov, float(width)/float(height), aperture, dist_to_focus);
+    
+    // Spawning threads
+    bool kill = false;
+    int threadCount = 16;
+    threadCount = thread::hardware_concurrency(); // Enable Multithreading
+    thread* threads = new thread[threadCount];
+    for (int id=1; id<=threadCount; id++)
+        threads[id] = thread(worker, &kill, threadCount, id, width, height, sampling, samples, pixels, world, cam);
+
+    // Wait until the window is closed
+    show_window(width, height, pixels);
+    
+    // Terminate threads
+    kill = true;
+    for (int id=0; id<threadCount; id++)
+        threads[id].join();
+    
+    return EXIT_SUCCESS;
+}
