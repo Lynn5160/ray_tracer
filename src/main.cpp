@@ -73,7 +73,7 @@ int main()
 {
     int width = 1024;
     int height = 512;
-    int sampling = 999;
+    int sampling = 1000;
     
     vec3* samples = new vec3[width * height];
     unsigned int* pixels = new unsigned int[width * height];
@@ -97,7 +97,7 @@ int main()
     
     // Spawning threads
     bool kill = false;
-    int threadCount = 16;
+    int threadCount = 1;
     threadCount = thread::hardware_concurrency(); // Enable Multithreading
     thread* threads = new thread[threadCount];
     for (int id=0; id<threadCount; id++)
