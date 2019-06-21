@@ -22,7 +22,7 @@ vec3 color(const ray& r, hitable* world)
     }
 }
 
-void worker(int tc, int id, int width, int height, int sampling, unsigned int* pixels, hitable* world, camera* cam)
+void worker(bool* kill, int tc, int id, int width, int height, int sampling, unsigned int* pixels, hitable* world, camera* cam)
 {
     int ny1 = height / tc * (++id);
     int ny2 = ny1 - (height / tc);
@@ -71,14 +71,20 @@ int main()
     camera* cam = new camera();
         
     // Spawning threads
+    bool kill = false;
     int threadCount = 1;
     threadCount = thread::hardware_concurrency(); // Enable Multithreading
     thread* threads = new thread[threadCount];
     for (int id=0; id<threadCount; id++)
-        threads[id] = thread(worker, threadCount, id, width, height, sampling, pixels, world, cam);
+        threads[id] = thread(worker, &kill, threadCount, id, width, height, sampling, pixels, world, cam);
     
     // Wait until the window is closed
     show_window(width, height, pixels);
     
+    // Terminate threads
+    kill = true;
+    for (int id=0; id<threadCount; id++)
+        threads[id].join();
+
     return EXIT_SUCCESS;
 }
