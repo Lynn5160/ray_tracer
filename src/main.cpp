@@ -1,5 +1,4 @@
 #include <thread>
-#include <random>
 
 #include "window.h"
 #include "ray.h"
@@ -8,9 +7,7 @@
 #include "camera.h"
 #include "material.h"
 
-
 using namespace std;
-
 
 vec3 color(const ray& r, hitable* world, int depth)
 {
@@ -31,7 +28,6 @@ vec3 color(const ray& r, hitable* world, int depth)
         return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
     }
 }
-
 
 void worker(bool* kill, int tc, int id, int width, int height, int sampling, vec3* samples, unsigned int* pixels, hitable* world, camera* cam)
 {
@@ -73,7 +69,6 @@ void worker(bool* kill, int tc, int id, int width, int height, int sampling, vec
     }
 }
 
-
 int main()
 {
     int width = 1024;
@@ -85,8 +80,8 @@ int main()
 
     hitable* list[4];
     
-    list[0] = new sphere(vec3(0, 0, -1), 0.5,  new lambertian(vec3(0.8, 0.8, 0.8)));
-    list[1] = new sphere(vec3(0, -100.5, -1), 100, new lambertian(vec3(0.0, 0.5, 0.0)));
+    list[0] = new sphere(vec3(0, 0, -1), 0.5,  new diffuse(vec3(0.8, 0.8, 0.8)));
+    list[1] = new sphere(vec3(0, -100.5, -1), 100, new diffuse(vec3(0.0, 0.5, 0.0)));
     list[2] = new sphere(vec3(1, 0, -1), 0.5, new metal(vec3(0.8, 0.6, 0.2), 0.2));
     list[3] = new sphere(vec3(-1, 0, -1), 0.5, new dielectric(1.52));
     
