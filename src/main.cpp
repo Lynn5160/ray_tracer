@@ -1,5 +1,4 @@
 #include <thread>
-#include <random>
 
 #include "window.h"
 #include "ray.h"
@@ -8,9 +7,7 @@
 #include "camera.h"
 #include "material.h"
 
-
 using namespace std;
-
 
 vec3 color(const ray& r, hitable* world, int depth)
 {
@@ -31,7 +28,6 @@ vec3 color(const ray& r, hitable* world, int depth)
         return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
     }
 }
-
 
 void worker(bool* kill, int tc, int id, int width, int height, int sampling, vec3* samples, unsigned int* pixels, hitable* world, camera* cam)
 {
@@ -72,7 +68,6 @@ void worker(bool* kill, int tc, int id, int width, int height, int sampling, vec
         }
     }
 }
-
 
 int main()
 {
