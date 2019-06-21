@@ -73,7 +73,7 @@ int main()
 {
     int width = 1024;
     int height = 512;
-    int sampling = 999;
+    int sampling = 1000;
     
     vec3* samples = new vec3[width * height];
     unsigned int* pixels = new unsigned int[width * height];
