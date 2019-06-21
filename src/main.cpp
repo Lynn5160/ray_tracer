@@ -29,7 +29,7 @@ vec3 color(const ray& r, hitable* world, int depth)
     }
 }
 
-void worker(int tc, int id, int width, int height, int sampling, vec3* samples, unsigned int* pixels, hitable* world, camera* cam)
+void worker(bool* kill, int tc, int id, int width, int height, int sampling, vec3* samples, unsigned int* pixels, hitable* world, camera* cam)
 {
     vec3 col;
     float u, v;
@@ -43,7 +43,10 @@ void worker(int tc, int id, int width, int height, int sampling, vec3* samples, 
         for (int j = h_max-1; j >= h_min; j--)
         {
             for (int i = 0; i < width; i++)
-            {   
+            {
+                if (*kill)
+                    return;
+                
                 idx = width * (height-j-1) + i;
 
                 u = float(i + drand48()) / float(width);
@@ -125,14 +128,20 @@ int main()
     camera* cam = new camera(lookfrom, lookat, vec3(0,1,0), vfov, float(width)/float(height), aperture, dist_to_focus);
     
     // Spawning threads
+    bool kill = false;
     int threadCount = 16;
     threadCount = thread::hardware_concurrency(); // Enable Multithreading
     thread* threads = new thread[threadCount];
     for (int id=1; id<=threadCount; id++)
-        threads[id] = thread(worker, threadCount, id, width, height, sampling, samples, pixels, world, cam);
+        threads[id] = thread(worker, &kill, threadCount, id, width, height, sampling, samples, pixels, world, cam);
 
     // Wait until the window is closed
     show_window(width, height, pixels);
+    
+    // Terminate threads
+    kill = true;
+    for (int id=0; id<threadCount; id++)
+        threads[id].join();
     
     return EXIT_SUCCESS;
 }
