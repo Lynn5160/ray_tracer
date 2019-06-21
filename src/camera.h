@@ -19,7 +19,7 @@ public:
         u = unit_vector(cross(vup, w));
         v = cross(w, u);
 
-        lower_left_corner = origin - half_width*u - half_height*v -w;
+        lower_left_corner = origin - half_width*u - half_height*v - w;
         horizontal = 2*half_width*u;
         vertical = 2*half_height*v;
     }
