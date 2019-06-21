@@ -22,36 +22,36 @@ vec3 color(const ray& r, hitable* world)
     }
 }
 
-void worker(bool* kill, int tc, int id, int nx, int ny, int ns, unsigned int* pixels, hitable* world, camera* cam)
+void worker(bool* kill, int tc, int id, int width, int height, int sampling, unsigned int* pixels, hitable* world, camera* cam)
 {
-    int ny1 = ny / tc * (++id);
-    int ny2 = ny1 - (ny / tc);
+    int ny1 = height / tc * (++id);
+    int ny2 = ny1 - (height / tc);
     
     for (int j = ny1-1; j >= ny2; j--)
     {
-        for (int i=0; i < nx; i++)
+        for (int i=0; i < width; i++)
         {
             if (*kill)
                 return;
 
             vec3 col(0, 0, 0);
-            for(int s=0; s < ns; s++)
+            for(int s=0; s < sampling; s++)
             {
-                float u = float(i + drand48()) / float(nx);
-                float v = float(j + drand48()) / float(ny);
+                float u = float(i + drand48()) / float(width);
+                float v = float(j + drand48()) / float(height);
 
                 ray r = cam->get_ray(u, v);
                 col += color(r, world);
             }
 
-            col /= float(ns);
+            col /= float(sampling);
 
             // Converting to integers
             int ir = int(255.99 * col[0]);
             int ig = int(255.99 * col[1]);
             int ib = int(255.99 * col[2]);
 
-            int idx = nx * (ny-j-1) + i;
+            int idx = width * (height-j-1) + i;
             pixels[idx] = (ir << 16) + (ig << 8) + ib;
         }
     }
@@ -59,11 +59,11 @@ void worker(bool* kill, int tc, int id, int nx, int ny, int ns, unsigned int* pi
 
 int main()
 {
-    int nx = 1024;
-    int ny = 512;
-    int ns = 100;
+    int width = 1024;
+    int height = 512;
+    int sampling = 100;
     
-    unsigned int *pixels = new unsigned int[nx*ny];
+    unsigned int *pixels = new unsigned int[width*height];
     
     hitable* list[2];
     
@@ -79,10 +79,10 @@ int main()
     threadCount = thread::hardware_concurrency(); // Enable Multithreading
     thread* threads = new thread[threadCount];
     for (int id=0; id<threadCount; id++)
-        threads[id] = thread(worker, &kill, threadCount, id, nx, ny, ns, pixels, world, cam);
+        threads[id] = thread(worker, &kill, threadCount, id, width, height, sampling, pixels, world, cam);
     
     // Wait until the window is closed
-    show_window(nx, ny, pixels);
+    show_window(width, height, pixels);
     
     // Terminate threads
     kill = true;
