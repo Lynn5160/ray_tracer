@@ -93,7 +93,7 @@ int main()
     float aperture = 0.5;
     float vfov = 50.0;
 
-    camera* cam = new camera(lookfrom, lookat, vec3(0,1,0), vfov, float(width)/float(height), aperture, dist_to_focus);
+    camera* cam = new camera(lookfrom, lookat, vec3(0,1,0), vfov, float(width)/float(height));
     
     // Spawning threads
     bool kill = false;
