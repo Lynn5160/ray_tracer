@@ -58,7 +58,7 @@ void worker(bool* kill, int tc, int id, int width, int height, int sampling, vec
 
                 col = samples[idx] / s;
 
-                // Approximate sRGB and convert to integers
+                // Apperoximate sRGB and convert to integers
                 ir = int(255.99 * sqrt(col[0]));
                 ig = int(255.99 * sqrt(col[1]));
                 ib = int(255.99 * sqrt(col[2]));
@@ -69,61 +69,29 @@ void worker(bool* kill, int tc, int id, int width, int height, int sampling, vec
     }
 }
 
-hitable *random_scene() {
-    int n = 500;
-    hitable **list = new hitable*[n+1];
-    list[0] =  new sphere(vec3(0,-1000,0), 1000, new lambertian(vec3(0.5, 0.5, 0.5)));
-    int i = 1;
-    for (int a = -11; a < 11; a++) {
-        for (int b = -11; b < 11; b++) {
-            float choose_mat = drand48();
-            vec3 center(a+0.9*drand48(),0.2,b+0.9*drand48()); 
-            if ((center-vec3(4,0.2,0)).length() > 0.9) { 
-                if (choose_mat < 0.8) {  // diffuse
-                    list[i++] = new sphere(center, 0.2, new lambertian(vec3(drand48()*drand48(), drand48()*drand48(), drand48()*drand48())));
-                }
-                else if (choose_mat < 0.95) { // metal
-                    list[i++] = new sphere(center, 0.2,
-                            new metal(vec3(0.5*(1 + drand48()), 0.5*(1 + drand48()), 0.5*(1 + drand48())),  0.5*drand48()));
-                }
-                else {  // glass
-                    list[i++] = new sphere(center, 0.2, new dielectric(1.5));
-                }
-            }
-        }
-    }
-
-    list[i++] = new sphere(vec3(0, 1, 0), 1.0, new dielectric(1.5));
-    list[i++] = new sphere(vec3(-4, 1, 0), 1.0, new lambertian(vec3(0.4, 0.2, 0.1)));
-    list[i++] = new sphere(vec3(4, 1, 0), 1.0, new metal(vec3(0.7, 0.6, 0.5), 0.0));
-
-    return new hitable_list(list,i);
-}
-
 int main()
 {
     int width = 1024;
     int height = 512;
-    int sampling = 1000;
+    int sampling = 999;
     
     vec3* samples = new vec3[width * height];
     unsigned int* pixels = new unsigned int[width * height];
 
     hitable* list[4];
     
-    list[0] = new sphere(vec3(0, 0, -1), 0.5,  new lambertian(vec3(0.8, 0.8, 0.8)));
-    list[1] = new sphere(vec3(0, -100.5, -1), 100, new lambertian(vec3(0.0, 0.5, 0.0)));
+    list[0] = new sphere(vec3(0, 0, -1), 0.5,  new diffuse(vec3(0.8, 0.8, 0.8)));
+    list[1] = new sphere(vec3(0, -100.5, -1), 100, new diffuse(vec3(0.0, 0.5, 0.0)));
     list[2] = new sphere(vec3(1, 0, -1), 0.5, new metal(vec3(0.8, 0.6, 0.2), 0.2));
     list[3] = new sphere(vec3(-1, 0, -1), 0.5, new dielectric(1.52));
     
     hitable* world = new hitable_list(list, 4);
-    world = random_scene();
 
-    vec3 lookfrom(13,2,3);
-    vec3 lookat(0,0,0);
-    float dist_to_focus = 10.0;
-    float aperture = 0.1;
-    float vfov = 20.0;
+    vec3 lookfrom(-1, 0.5, 1);
+    vec3 lookat(0, 0, -1);
+    float dist_to_focus = 2.17;
+    float aperture = 0.5;
+    float vfov = 50.0;
 
     camera* cam = new camera(lookfrom, lookat, vec3(0,1,0), vfov, float(width)/float(height), aperture, dist_to_focus);
     
@@ -132,8 +100,8 @@ int main()
     int threadCount = 16;
     threadCount = thread::hardware_concurrency(); // Enable Multithreading
     thread* threads = new thread[threadCount];
-    for (int id=1; id<=threadCount; id++)
-        threads[id] = thread(worker, &kill, threadCount, id, width, height, sampling, samples, pixels, world, cam);
+    for (int id=0; id<threadCount; id++)
+        threads[id] = thread(worker, &kill, threadCount, id+1, width, height, sampling, samples, pixels, world, cam);
 
     // Wait until the window is closed
     show_window(width, height, pixels);
